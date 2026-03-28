@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
 
 from src.api.routes import companies, emissions
-from src.api.routes import validation
+from src.api.routes import validation, pledges, filings
 
 
 def create_app(db_session_override: Session | None = None) -> FastAPI:
@@ -40,6 +40,8 @@ def create_app(db_session_override: Session | None = None) -> FastAPI:
     app.include_router(companies.build_router(get_db))
     app.include_router(emissions.build_router(get_db))
     app.include_router(validation.build_router(get_db))
+    app.include_router(pledges.build_router(get_db))
+    app.include_router(filings.build_router(get_db))
 
     return app
 

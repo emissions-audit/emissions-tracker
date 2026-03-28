@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
-from src.shared.models import Base, Company, Filing, Emission, CrossValidation, SourceEntry
+from src.shared.models import Base, Company, Filing, Emission, CrossValidation, SourceEntry, Pledge
 from src.api.main import create_app
 
 
@@ -66,6 +66,15 @@ def seeded_session(db_session):
                     source_type="regulatory", value_mt_co2e=65_000_000, filing_id=filing1_id),
         SourceEntry(id=uuid.uuid4(), cross_validation_id=cv_id,
                     source_type="satellite", value_mt_co2e=72_000_000),
+    ])
+    db_session.commit()
+
+    # Pledge fixtures (Task 13)
+    db_session.add_all([
+        Pledge(id=uuid.uuid4(), company_id=shell_id, pledge_type="net_zero",
+               target_year=2050, target_scope="1+2+3", target_reduction_pct=100.0,
+               baseline_year=2016, baseline_value_mt_co2e=1_700_000_000,
+               source_id=filing1_id),
     ])
     db_session.commit()
 
