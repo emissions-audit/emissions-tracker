@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
-from src.shared.models import Base, Company, Filing, Emission
+from src.shared.models import Base, Company, Filing, Emission, CrossValidation, SourceEntry
 from src.api.main import create_app
 
 
@@ -55,6 +55,20 @@ def seeded_session(db_session):
                  value_mt_co2e=112_000_000, source_id=filing2_id),
     ])
     db_session.commit()
+
+    # Cross-validation fixtures (Task 12)
+    cv_id = uuid.UUID("00000000-0000-0000-0000-000000000020")
+    db_session.add_all([
+        CrossValidation(id=cv_id, company_id=shell_id, year=2023, scope="1",
+                        source_count=2, min_value=65_000_000, max_value=72_000_000,
+                        spread_pct=10.77, flag="yellow"),
+        SourceEntry(id=uuid.uuid4(), cross_validation_id=cv_id,
+                    source_type="regulatory", value_mt_co2e=65_000_000, filing_id=filing1_id),
+        SourceEntry(id=uuid.uuid4(), cross_validation_id=cv_id,
+                    source_type="satellite", value_mt_co2e=72_000_000),
+    ])
+    db_session.commit()
+
     return db_session
 
 

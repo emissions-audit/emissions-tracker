@@ -4,6 +4,7 @@ from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
 
 from src.api.routes import companies, emissions
+from src.api.routes import validation
 
 
 def create_app(db_session_override: Session | None = None) -> FastAPI:
@@ -36,11 +37,9 @@ def create_app(db_session_override: Session | None = None) -> FastAPI:
 
     # Build fresh routers for this app instance to avoid route accumulation
     # when create_app is called multiple times (e.g. once per test).
-    companies_router = companies.build_router(get_db)
-    emissions_router = emissions.build_router(get_db)
-
-    app.include_router(companies_router)
-    app.include_router(emissions_router)
+    app.include_router(companies.build_router(get_db))
+    app.include_router(emissions.build_router(get_db))
+    app.include_router(validation.build_router(get_db))
 
     return app
 
