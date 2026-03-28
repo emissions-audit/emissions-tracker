@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from src.api.routes import companies, emissions
 from src.api.routes import validation, pledges, filings
+from src.api.routes import meta, export
 from src.api.middleware.auth import ApiKeyMiddleware
 from src.api.middleware.rate_limit import RateLimitMiddleware
 
@@ -51,6 +52,8 @@ def create_app(db_session_override: Session | None = None) -> FastAPI:
     app.include_router(validation.build_router(get_db))
     app.include_router(pledges.build_router(get_db))
     app.include_router(filings.build_router(get_db))
+    app.include_router(meta.build_router(get_db))
+    app.include_router(export.build_router(get_db))
 
     return app
 
