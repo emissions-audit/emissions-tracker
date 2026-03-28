@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from fastapi import Depends, FastAPI
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from src.api.routes import companies, emissions
 from src.api.routes import validation, pledges, filings
+from src.api.middleware.auth import ApiKeyMiddleware
+from src.api.middleware.rate_limit import RateLimitMiddleware
 
 
 def create_app(db_session_override: Session | None = None) -> FastAPI:
@@ -26,14 +28,21 @@ def create_app(db_session_override: Session | None = None) -> FastAPI:
     if db_session_override is not None:
         def _get_db() -> Session:
             return db_session_override
+        # For middleware: create a factory from the test session's engine
+        session_factory = sessionmaker(bind=db_session_override.get_bind())
     else:
         from src.shared.db import create_session_factory
         factory = create_session_factory()
 
         def _get_db() -> Session:
             return factory()
+        session_factory = factory
 
     get_db = Depends(_get_db)
+
+    # Middleware (order matters: auth first, then rate limit)
+    app.add_middleware(RateLimitMiddleware)
+    app.add_middleware(ApiKeyMiddleware, db_session_factory=session_factory)
 
     # Build fresh routers for this app instance to avoid route accumulation
     # when create_app is called multiple times (e.g. once per test).
