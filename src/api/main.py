@@ -1,0 +1,59 @@
+from __future__ import annotations
+
+from fastapi import Depends, FastAPI
+from sqlalchemy.orm import Session
+
+from src.api.routes import companies, emissions
+
+
+def create_app(db_session_override: Session | None = None) -> FastAPI:
+    """
+    Create and configure the FastAPI application.
+
+    Parameters
+    ----------
+    db_session_override:
+        When provided (e.g. in tests), every request uses this session directly
+        instead of creating one from the production async engine.
+    """
+    app = FastAPI(
+        title="Emissions Tracker API",
+        description="Open-source corporate emissions transparency tracker",
+        version="0.1.0",
+    )
+
+    if db_session_override is not None:
+        def _get_db() -> Session:
+            return db_session_override
+    else:
+        from src.shared.db import create_session_factory
+        factory = create_session_factory()
+
+        def _get_db() -> Session:
+            return factory()
+
+    get_db = Depends(_get_db)
+
+    # Build fresh routers for this app instance to avoid route accumulation
+    # when create_app is called multiple times (e.g. once per test).
+    companies_router = companies.build_router(get_db)
+    emissions_router = emissions.build_router(get_db)
+
+    app.include_router(companies_router)
+    app.include_router(emissions_router)
+
+    return app
+
+
+# Module-level app instance for production use (uvicorn src.api.main:app).
+# Deferred so that importing this module during tests (where DATABASE_URL is
+# not set) does not trigger Settings validation.
+def _make_production_app() -> FastAPI:
+    try:
+        return create_app()
+    except Exception:
+        # Gracefully skip if env is not configured (e.g. during test collection).
+        return FastAPI(title="Emissions Tracker API (unconfigured)")
+
+
+app = _make_production_app()
