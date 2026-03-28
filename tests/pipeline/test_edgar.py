@@ -54,7 +54,8 @@ async def test_edgar_source_fetch_uses_correct_url(monkeypatch):
 
     async def mock_get(self, url, **kwargs):
         captured_urls.append(url)
-        response = httpx.Response(200, json={"facts": {"us-gaap": {}}})
+        request = httpx.Request("GET", url)
+        response = httpx.Response(200, json={"facts": {"us-gaap": {}}}, request=request)
         return response
 
     monkeypatch.setattr(httpx.AsyncClient, "get", mock_get)
