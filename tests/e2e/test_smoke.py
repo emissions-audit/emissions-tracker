@@ -17,10 +17,13 @@ def api_is_running() -> bool:
         return False
 
 
-pytestmark = pytest.mark.skipif(
-    not api_is_running(),
-    reason="E2E: Docker Compose stack not running at localhost:8000",
-)
+pytestmark = [
+    pytest.mark.e2e,
+    pytest.mark.skipif(
+        not api_is_running(),
+        reason="E2E: Docker Compose stack not running at localhost:8000",
+    ),
+]
 
 
 class TestHealthAndStats:
