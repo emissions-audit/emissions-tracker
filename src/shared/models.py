@@ -137,3 +137,17 @@ class ApiKey(Base):
     rate_limit: Mapped[int] = mapped_column(Integer, default=100)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class ApiCallLog(Base):
+    __tablename__ = "api_call_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    endpoint: Mapped[str] = mapped_column(String(500))
+    method: Mapped[str] = mapped_column(String(10))
+    status_code: Mapped[int] = mapped_column(Integer)
+    response_time_ms: Mapped[float] = mapped_column(Numeric(precision=10, scale=2))
+    api_key_hash: Mapped[str | None] = mapped_column(String(16))
+    tier: Mapped[str] = mapped_column(String(20), default="anonymous")
+    client_ip: Mapped[str | None] = mapped_column(String(45))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

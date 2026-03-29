@@ -128,3 +128,17 @@ class StatsResponse(BaseModel):
     emission_count: int
     year_range: dict[str, int]
     last_updated: datetime
+
+
+class EndpointCount(BaseModel):
+    endpoint: str
+    calls: int
+
+
+class AnalyticsSummaryResponse(BaseModel):
+    period_days: int
+    total_calls: int
+    unique_api_keys: int
+    avg_response_time_ms: float
+    top_endpoints: list[EndpointCount]
+    calls_by_tier: dict[str, int]

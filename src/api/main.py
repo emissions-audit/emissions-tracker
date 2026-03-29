@@ -8,6 +8,7 @@ from src.api.routes import validation, pledges, filings
 from src.api.routes import meta, export
 from src.api.middleware.auth import ApiKeyMiddleware
 from src.api.middleware.rate_limit import RateLimitMiddleware
+from src.api.middleware.analytics import AnalyticsMiddleware
 
 
 def create_app(db_session_override: Session | None = None) -> FastAPI:
@@ -41,9 +42,10 @@ def create_app(db_session_override: Session | None = None) -> FastAPI:
 
     get_db = Depends(_get_db)
 
-    # Middleware (order matters: auth first, then rate limit)
+    # Middleware (last added = outermost = runs first)
     app.add_middleware(RateLimitMiddleware)
     app.add_middleware(ApiKeyMiddleware, db_session_factory=session_factory)
+    app.add_middleware(AnalyticsMiddleware, db_session_factory=session_factory)
 
     # Build fresh routers for this app instance to avoid route accumulation
     # when create_app is called multiple times (e.g. once per test).

@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from src.shared.models import Company, Emission, Filing
-from src.shared.schemas import StatsResponse
+from src.shared.models import Company, Emission, Filing, ApiCallLog
+from src.shared.schemas import StatsResponse, AnalyticsSummaryResponse
 
 
 def build_router(get_db) -> APIRouter:
@@ -65,5 +65,55 @@ def build_router(get_db) -> APIRouter:
                 "red": "> 30% spread — major discrepancy",
             },
         }
+
+    @r.get("/v1/analytics/summary", response_model=AnalyticsSummaryResponse)
+    def analytics_summary(db: Session = get_db, days: int = 30):
+        cutoff = datetime.utcnow() - timedelta(days=days)
+
+        total_calls = (
+            db.query(func.count(ApiCallLog.id))
+            .filter(ApiCallLog.created_at >= cutoff)
+            .scalar() or 0
+        )
+
+        unique_keys = (
+            db.query(func.count(func.distinct(ApiCallLog.api_key_hash)))
+            .filter(ApiCallLog.created_at >= cutoff, ApiCallLog.api_key_hash.isnot(None))
+            .scalar() or 0
+        )
+
+        avg_rt = (
+            db.query(func.avg(ApiCallLog.response_time_ms))
+            .filter(ApiCallLog.created_at >= cutoff)
+            .scalar() or 0.0
+        )
+
+        top_endpoints = (
+            db.query(ApiCallLog.endpoint, func.count(ApiCallLog.id).label("calls"))
+            .filter(ApiCallLog.created_at >= cutoff)
+            .group_by(ApiCallLog.endpoint)
+            .order_by(func.count(ApiCallLog.id).desc())
+            .limit(10)
+            .all()
+        )
+
+        tier_counts = (
+            db.query(ApiCallLog.tier, func.count(ApiCallLog.id))
+            .filter(ApiCallLog.created_at >= cutoff)
+            .group_by(ApiCallLog.tier)
+            .all()
+        )
+
+        return AnalyticsSummaryResponse(
+            period_days=days,
+            total_calls=total_calls,
+            unique_api_keys=unique_keys,
+            avg_response_time_ms=round(float(avg_rt), 2),
+            top_endpoints=[
+                {"endpoint": ep, "calls": count}
+                for ep, count in top_endpoints
+            ],
+            calls_by_tier={tier: count for tier, count in tier_counts},
+        )
 
     return r
