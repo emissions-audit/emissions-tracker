@@ -15,6 +15,7 @@ from src.pipeline.sources.edgar import EdgarSource
 from src.pipeline.sources.climate_trace import ClimateTraceSource
 from src.pipeline.sources.cdp import CdpSource
 from src.pipeline.validate import compute_cross_validations
+from src.pipeline.export import export_all
 
 app = typer.Typer(name="emissions-pipeline", help="Corporate emissions data pipeline")
 
@@ -206,6 +207,22 @@ def seed():
     session.commit()
     session.close()
     typer.echo(f"Seeded {count} companies")
+
+
+@app.command()
+def export(
+    output: str = typer.Option("./data/export", help="Output directory for data dump"),
+):
+    """Export all data to JSON and CSV files for open data dump."""
+    session = _get_sync_session()
+    try:
+        typer.echo(f"Exporting data to {output}...")
+        files = export_all(session, output)
+        typer.echo(f"Exported {len(files)} files:")
+        for name, path in files.items():
+            typer.echo(f"  {name}: {path}")
+    finally:
+        session.close()
 
 
 if __name__ == "__main__":
