@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emissions Tracker — Open Corporate Emissions Data</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">Emissions Tracker</div>
+            <div class="nav-links">
+                <a href="#api">API</a>
+                <a href="#data">Data</a>
+                <a href="#about">About</a>
+                <a href="https://github.com/cphalpert/emissions-tracker" class="btn-nav">GitHub</a>
+            </div>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>The Wikipedia of<br>Corporate Emissions</h1>
+        <p class="subtitle">Free, open-source database aggregating public emissions disclosures.
+        Cross-validated against independent measurements. No paywall.</p>
+        <div class="hero-cta">
+            <a href="#api" class="btn-primary">Explore the API</a>
+            <a href="https://github.com/cphalpert/emissions-tracker" class="btn-secondary">View on GitHub</a>
+        </div>
+    </section>
+
+    <section class="stats-bar">
+        <div class="stat">
+            <span class="stat-value">20+</span>
+            <span class="stat-label">Energy Companies</span>
+        </div>
+        <div class="stat">
+            <span class="stat-value">4</span>
+            <span class="stat-label">Independent Sources</span>
+        </div>
+        <div class="stat">
+            <span class="stat-value">3</span>
+            <span class="stat-label">Years of Data</span>
+        </div>
+        <div class="stat">
+            <span class="stat-value">Free</span>
+            <span class="stat-label">Forever for Research</span>
+        </div>
+    </section>
+
+    <section id="about" class="features">
+        <h2>Why This Exists</h2>
+        <p class="section-intro">~100 companies produce ~71% of global emissions. The data to hold
+        them accountable exists but is scattered across PDFs, inconsistent formats, and paywalled
+        databases costing $25K&ndash;$200K/year.</p>
+        <div class="feature-grid">
+            <div class="feature">
+                <h3>Cross-Validation</h3>
+                <p>Compare what companies <em>report</em> against what satellites <em>measure</em>.
+                Discrepancy flags surface greenwashing.</p>
+            </div>
+            <div class="feature">
+                <h3>Multiple Sources</h3>
+                <p>SEC EDGAR (regulatory), Climate TRACE (satellite), CDP (voluntary), and
+                sustainability report PDFs &mdash; all normalized.</p>
+            </div>
+            <div class="feature">
+                <h3>Open Source</h3>
+                <p>MIT licensed. Self-host it, fork it, contribute to it. Raw data dumps
+                available for free.</p>
+            </div>
+            <div class="feature">
+                <h3>Developer-First</h3>
+                <p>REST API with auto-generated Swagger docs. JSON + CSV export.
+                API keys with generous free tier.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="api" class="api-demo">
+        <h2>Try the API</h2>
+        <div class="code-examples">
+            <div class="code-block">
+                <div class="code-header">List energy companies</div>
+                <pre><code>curl https://api.emissions-tracker.org/v1/companies?sector=energy</code></pre>
+            </div>
+            <div class="code-block">
+                <div class="code-header">Find major discrepancies between reported and measured emissions</div>
+                <pre><code>curl https://api.emissions-tracker.org/v1/discrepancies?flag=red</code></pre>
+            </div>
+            <div class="code-block">
+                <div class="code-header">Compare companies side-by-side</div>
+                <pre><code>curl "https://api.emissions-tracker.org/v1/emissions/compare?companies=ID1,ID2&amp;scopes=1,2&amp;years=2022,2023"</code></pre>
+            </div>
+            <div class="code-block">
+                <div class="code-header">Download full dataset</div>
+                <pre><code>curl -H "X-API-Key: YOUR_KEY" https://api.emissions-tracker.org/v1/export/full?format=csv</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <section id="data" class="data-sources">
+        <h2>Data Sources &amp; Trust Hierarchy</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Type</th>
+                    <th>Trust Rank</th>
+                    <th>Method</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>SEC EDGAR</td>
+                    <td>Regulatory</td>
+                    <td>1 (highest)</td>
+                    <td>XBRL parsing</td>
+                </tr>
+                <tr>
+                    <td>Climate TRACE</td>
+                    <td>Satellite</td>
+                    <td>2</td>
+                    <td>API ingestion</td>
+                </tr>
+                <tr>
+                    <td>CDP</td>
+                    <td>Voluntary</td>
+                    <td>3</td>
+                    <td>Structured data parsing</td>
+                </tr>
+                <tr>
+                    <td>Sustainability PDFs</td>
+                    <td>Self-reported</td>
+                    <td>4 (lowest)</td>
+                    <td>LLM-assisted extraction</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="cta-section">
+        <h2>Get Started</h2>
+        <div class="cta-grid">
+            <div class="cta-card">
+                <h3>Researchers &amp; Journalists</h3>
+                <p>Free API access. No strings attached. Export to CSV or JSON.</p>
+                <a href="https://github.com/cphalpert/emissions-tracker#quick-start" class="btn-primary">Get Started</a>
+            </div>
+            <div class="cta-card">
+                <h3>Developers</h3>
+                <p>Build climate tech on a clean API. Self-host or use the canonical instance.</p>
+                <a href="https://github.com/cphalpert/emissions-tracker" class="btn-secondary">Clone &amp; Run</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>Emissions Tracker is open source under the MIT License.</p>
+        <p>
+            <a href="https://github.com/cphalpert/emissions-tracker">GitHub</a> &middot;
+            <a href="https://github.com/cphalpert/emissions-tracker#api-documentation">API Docs</a> &middot;
+            <a href="https://github.com/cphalpert/emissions-tracker/blob/main/CONTRIBUTING.md">Contribute</a>
+        </p>
+    </footer>
+</body>
+</html>
