@@ -14,7 +14,7 @@ We compare emissions data across multiple independent sources (SEC filings, sate
 
 ```bash
 # Clone and start
-git clone https://github.com/YOUR_USERNAME/emissions-tracker.git
+git clone https://github.com/cphalpert/emissions-tracker.git
 cd emissions-tracker
 cp .env.example .env
 docker compose up db -d
@@ -71,6 +71,41 @@ Full API docs: http://localhost:8000/docs
 pip install -e ".[dev]"
 pytest tests/ -v
 ```
+
+## Deployment
+
+### Railway (recommended)
+
+1. Create a [Railway](https://railway.app) account
+2. New Project → Deploy from GitHub repo
+3. Railway auto-detects `Dockerfile.api` via `railway.json`
+4. Add a PostgreSQL service from the Railway dashboard
+5. Railway auto-sets `DATABASE_URL` — no manual config needed
+6. Set `ANTHROPIC_API_KEY` in the service variables (optional — only needed for PDF extraction)
+7. After deploy, run migrations:
+   ```bash
+   railway run alembic upgrade head
+   railway run emissions-pipeline seed
+   ```
+
+### Docker Compose (self-hosted)
+
+```bash
+git clone https://github.com/cphalpert/emissions-tracker.git
+cd emissions-tracker
+cp .env.example .env  # edit DATABASE_URL and ANTHROPIC_API_KEY
+docker compose up -d
+# Run migrations
+docker compose exec api alembic upgrade head
+docker compose exec api emissions-pipeline seed
+```
+
+### Health Endpoints
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | Liveness probe — returns `{"status": "healthy"}` |
+| `GET /ready` | Readiness probe — checks database connectivity |
 
 ## License
 
