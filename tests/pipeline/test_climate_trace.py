@@ -1,7 +1,18 @@
 import pytest
 import httpx
 
-from src.pipeline.sources.climate_trace import ClimateTraceSource, parse_asset_emissions
+from src.pipeline.sources.climate_trace import (
+    ClimateTraceSource,
+    TICKER_TO_OWNER,
+    parse_asset_emissions,
+)
+
+SEED_TICKERS = [
+    "XOM", "CVX", "COP", "SHEL", "BP",
+    "TTE", "ENI", "EQNR", "OXY", "MPC",
+    "PSX", "VLO", "DVN", "HES", "MRO",
+    "EOG", "SLB", "BKR", "HAL", "FANG",
+]
 
 
 SAMPLE_RESPONSE = [
@@ -41,12 +52,19 @@ def test_parse_asset_emissions_filters_years():
     assert results == []
 
 
+def test_all_seed_companies_in_ticker_map():
+    """All 20 seed tickers must be present in TICKER_TO_OWNER."""
+    missing = [t for t in SEED_TICKERS if t not in TICKER_TO_OWNER]
+    assert missing == [], f"Missing tickers: {missing}"
+    assert len(TICKER_TO_OWNER) >= 20
+
+
 @pytest.mark.asyncio
 async def test_climate_trace_source_constructs_url(monkeypatch):
     captured = []
 
     async def mock_get(self, url, **kwargs):
-        captured.append(url)
+        captured.append((url, kwargs.get("params", {})))
         request = httpx.Request("GET", url)
         return httpx.Response(200, json=[], request=request)
 
@@ -55,4 +73,23 @@ async def test_climate_trace_source_constructs_url(monkeypatch):
     source = ClimateTraceSource()
     await source.fetch_emissions(["XOM"], [2023])
     assert len(captured) == 1
-    assert "climatetrace" in captured[0].lower() or "climate-trace" in captured[0].lower()
+    url, params = captured[0]
+    assert "climatetrace" in url.lower() or "climate-trace" in url.lower()
+
+
+@pytest.mark.asyncio
+async def test_climate_trace_no_sector_filter(monkeypatch):
+    """API calls should NOT include a sector filter — owner param is sufficient."""
+    captured_params = []
+
+    async def mock_get(self, url, **kwargs):
+        captured_params.append(kwargs.get("params", {}))
+        request = httpx.Request("GET", url)
+        return httpx.Response(200, json=[], request=request)
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", mock_get)
+
+    source = ClimateTraceSource()
+    await source.fetch_emissions(["SLB", "XOM"], [2023])
+    for params in captured_params:
+        assert "sector" not in params, f"Unexpected sector filter in params: {params}"

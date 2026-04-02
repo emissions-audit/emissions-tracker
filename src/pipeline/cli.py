@@ -15,6 +15,8 @@ from src.pipeline.sources.edgar import EdgarSource
 from src.pipeline.sources.climate_trace import ClimateTraceSource
 from src.pipeline.sources.cdp import CdpSource
 from src.pipeline.sources.carb import CarbSource
+from src.pipeline.sources.epa_ghgrp import EpaGhgrpSource
+from src.pipeline.sources.eu_ets import EuEtsSource
 from src.pipeline.validate import compute_cross_validations
 from src.pipeline.export import export_all
 
@@ -25,6 +27,8 @@ SOURCE_MAP = {
     "climate_trace": ClimateTraceSource,
     "cdp": CdpSource,
     "carb": CarbSource,
+    "epa_ghgrp": EpaGhgrpSource,
+    "eu_ets": EuEtsSource,
 }
 
 FILING_TYPE_TO_SOURCE_TYPE = {
@@ -34,6 +38,8 @@ FILING_TYPE_TO_SOURCE_TYPE = {
     "sustainability_report": "self_reported",
     "csrd": "regulatory",
     "carb_sb253": "regulatory",
+    "epa_ghgrp": "regulatory",
+    "eu_ets": "regulatory",
 }
 
 

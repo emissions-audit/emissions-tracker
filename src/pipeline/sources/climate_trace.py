@@ -22,6 +22,11 @@ TICKER_TO_OWNER = {
     "DVN": "Devon Energy",
     "HES": "Hess",
     "MRO": "Marathon Oil",
+    "EOG": "EOG Resources",
+    "SLB": "Schlumberger",  # Climate TRACE uses "Schlumberger" not "SLB"
+    "BKR": "Baker Hughes",
+    "HAL": "Halliburton",
+    "FANG": "Diamondback Energy",
 }
 
 
@@ -74,7 +79,7 @@ class ClimateTraceSource(BaseSource):
                 try:
                     resp = await client.get(
                         CLIMATE_TRACE_API,
-                        params={"owners": owner, "sector": "oil-and-gas"},
+                        params={"owners": owner},
                     )
                     resp.raise_for_status()
                     data = resp.json()
