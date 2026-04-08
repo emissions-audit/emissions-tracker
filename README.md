@@ -14,7 +14,7 @@ We compare emissions data across multiple independent sources (SEC filings, sate
 
 ```bash
 # Clone and start
-git clone https://github.com/cphalpert/emissions-tracker.git
+git clone https://github.com/emissions-audit/emissions-tracker.git
 cd emissions-tracker
 cp .env.example .env
 docker compose up db -d
@@ -91,7 +91,7 @@ pytest tests/ -v
 ### Docker Compose (self-hosted)
 
 ```bash
-git clone https://github.com/cphalpert/emissions-tracker.git
+git clone https://github.com/emissions-audit/emissions-tracker.git
 cd emissions-tracker
 cp .env.example .env  # edit DATABASE_URL and ANTHROPIC_API_KEY
 docker compose up -d

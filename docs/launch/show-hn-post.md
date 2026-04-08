@@ -20,8 +20,8 @@ V1 covers 20+ energy companies across 3 years with 4 independent sources. It's t
 **Stack:** Python 3.12, FastAPI, PostgreSQL, Docker. ~60 tests. MIT licensed.
 
 **Links:**
-- GitHub: https://github.com/cphalpert/emissions-tracker
+- GitHub: https://github.com/emissions-audit/emissions-tracker
 - API docs: [hosted-url]/docs
-- Landing page: https://cphalpert.github.io/emissions-tracker
+- Landing page: https://emissions-audit.github.io/emissions-tracker
 
 Happy to answer questions about the data methodology, cross-validation algorithm, or anything else.
