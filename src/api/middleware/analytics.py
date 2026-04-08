@@ -23,10 +23,10 @@ class AnalyticsMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         duration_ms = (time.time() - start) * 1000
 
-        self._log_request(request, response, duration_ms)
+        await self._log_request(request, response, duration_ms)
         return response
 
-    def _log_request(self, request: Request, response: Response, duration_ms: float) -> None:
+    async def _log_request(self, request: Request, response: Response, duration_ms: float) -> None:
         if not self.db_session_factory:
             return
 
@@ -35,20 +35,18 @@ class AnalyticsMiddleware(BaseHTTPMiddleware):
         tier = getattr(request.state, "tier", "anonymous")
         client_ip = request.client.host if request.client else None
 
-        db = self.db_session_factory()
-        try:
-            log = ApiCallLog(
-                endpoint=request.url.path,
-                method=request.method,
-                status_code=response.status_code,
-                response_time_ms=round(duration_ms, 2),
-                api_key_hash=api_key_hash,
-                tier=tier,
-                client_ip=client_ip,
-            )
-            db.add(log)
-            db.commit()
-        except Exception:
-            db.rollback()
-        finally:
-            db.close()
+        async with self.db_session_factory() as db:
+            try:
+                log = ApiCallLog(
+                    endpoint=request.url.path,
+                    method=request.method,
+                    status_code=response.status_code,
+                    response_time_ms=round(duration_ms, 2),
+                    api_key_hash=api_key_hash,
+                    tier=tier,
+                    client_ip=client_ip,
+                )
+                db.add(log)
+                await db.commit()
+            except Exception:
+                await db.rollback()
