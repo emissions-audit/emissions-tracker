@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 import httpx
 
 from src.pipeline.sources.base import BaseSource, RawEmission
@@ -31,40 +29,56 @@ TICKER_TO_OWNER = {
 
 
 def parse_asset_emissions(
-    ticker: str, assets: list[dict], years: list[int]
-) -> list[RawEmission]:
-    yearly_totals: dict[int, float] = defaultdict(float)
-
+    ticker: str, assets: list[dict], year: int
+) -> RawEmission | None:
+    """Sum co2e_100yr EmissionsSummary across all assets for a single year."""
+    total = 0.0
     for asset in assets:
-        start = asset.get("start_time", "")
-        year = int(start[:4]) if len(start) >= 4 else None
-        if year not in years:
-            continue
-        if asset.get("gas") != "co2e_100yr":
-            continue
-        yearly_totals[year] += asset.get("emissions_quantity", 0)
+        for entry in asset.get("EmissionsSummary", []):
+            if entry.get("Gas") == "co2e_100yr":
+                total += entry.get("EmissionsQuantity", 0)
 
-    results = []
-    for year, total in sorted(yearly_totals.items()):
-        results.append(
-            RawEmission(
-                company_ticker=ticker,
-                year=year,
-                scope="Scope 1",
-                value=total,
-                unit="t_co2e",
-                methodology="satellite_derived",
-                verified=None,
-                source_url=CLIMATE_TRACE_API,
-                filing_type="climate_trace",
-                parser_used="api",
-            )
-        )
-    return results
+    if total <= 0:
+        return None
+
+    return RawEmission(
+        company_ticker=ticker,
+        year=year,
+        scope="Scope 1",
+        value=total,
+        unit="t_co2e",
+        methodology="satellite_derived",
+        verified=None,
+        source_url=CLIMATE_TRACE_API,
+        filing_type="climate_trace",
+        parser_used="api",
+    )
+
+
+PAGE_LIMIT = 500
 
 
 class ClimateTraceSource(BaseSource):
     name = "climate_trace"
+
+    async def _fetch_all_assets(
+        self, client: httpx.AsyncClient, owner: str, year: int
+    ) -> list[dict]:
+        """Paginate through all assets for an owner+year."""
+        assets: list[dict] = []
+        offset = 0
+        while True:
+            resp = await client.get(
+                CLIMATE_TRACE_API,
+                params={"owners": owner, "year": year, "limit": PAGE_LIMIT, "offset": offset},
+            )
+            resp.raise_for_status()
+            page = resp.json().get("assets", [])
+            assets.extend(page)
+            if len(page) < PAGE_LIMIT:
+                break
+            offset += PAGE_LIMIT
+        return assets
 
     async def fetch_emissions(self, tickers: list[str], years: list[int]) -> list[RawEmission]:
         if not tickers:
@@ -76,14 +90,12 @@ class ClimateTraceSource(BaseSource):
                 owner = TICKER_TO_OWNER.get(ticker.upper())
                 if not owner:
                     continue
-                try:
-                    resp = await client.get(
-                        CLIMATE_TRACE_API,
-                        params={"owners": owner},
-                    )
-                    resp.raise_for_status()
-                    data = resp.json()
-                    results.extend(parse_asset_emissions(ticker, data, years))
-                except httpx.HTTPError:
-                    continue
+                for year in years:
+                    try:
+                        assets = await self._fetch_all_assets(client, owner, year)
+                        emission = parse_asset_emissions(ticker, assets, year)
+                        if emission:
+                            results.append(emission)
+                    except httpx.HTTPError:
+                        continue
         return results
