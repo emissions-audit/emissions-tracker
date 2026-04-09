@@ -2,8 +2,8 @@ import uuid
 import datetime
 
 from fastapi import APIRouter, Query
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.shared.models import Pledge, Emission, Company
 from src.shared.schemas import PledgeResponse, PledgeTrackerRow
@@ -13,26 +13,25 @@ def build_router(get_db) -> APIRouter:
     router = APIRouter(tags=["pledges"])
 
     @router.get("/v1/companies/{company_id}/pledges", response_model=list[PledgeResponse])
-    def company_pledges(company_id: uuid.UUID, db: Session = get_db):
-        pledges = db.query(Pledge).filter(Pledge.company_id == company_id).all()
+    async def company_pledges(company_id: uuid.UUID, db: AsyncSession = get_db):
+        result = await db.execute(select(Pledge).where(Pledge.company_id == company_id))
+        pledges = result.scalars().all()
         return [PledgeResponse.model_validate(p) for p in pledges]
 
     @router.get("/v1/pledges/tracker", response_model=list[PledgeTrackerRow])
-    def pledge_tracker(db: Session = get_db):
-        pledges = (
-            db.query(Pledge, Company.name)
-            .join(Company, Pledge.company_id == Company.id)
-            .all()
-        )
+    async def pledge_tracker(db: AsyncSession = get_db):
+        stmt = select(Pledge, Company.name).join(Company, Pledge.company_id == Company.id)
+        pledge_rows = (await db.execute(stmt)).all()
         results = []
-        for pledge, company_name in pledges:
-            latest = (
-                db.query(Emission)
-                .filter(Emission.company_id == pledge.company_id)
-                .filter(Emission.scope.in_(["1", "total"]))
+        for pledge, company_name in pledge_rows:
+            latest_stmt = (
+                select(Emission)
+                .where(Emission.company_id == pledge.company_id)
+                .where(Emission.scope.in_(["1", "total"]))
                 .order_by(Emission.year.desc())
-                .first()
+                .limit(1)
             )
+            latest = (await db.execute(latest_stmt)).scalars().first()
             latest_value = float(latest.value_mt_co2e) if latest else None
             baseline = float(pledge.baseline_value_mt_co2e) if pledge.baseline_value_mt_co2e else None
             actual_reduction = None

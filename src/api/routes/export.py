@@ -4,7 +4,8 @@ import uuid
 
 from fastapi import APIRouter, Query, Request, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.shared.models import Company, Emission, Filing
 
@@ -19,15 +20,15 @@ def build_router(get_db) -> APIRouter:
             raise HTTPException(status_code=403, detail="Pro tier required for bulk export")
 
     @r.get("/v1/export/full")
-    def export_full(
+    async def export_full(
         request: Request,
-        db: Session = get_db,
+        db: AsyncSession = get_db,
         format: str = Query("json", pattern="^(json|csv)$"),
     ):
         _require_pro(request)
 
-        companies = db.query(Company).all()
-        emissions = db.query(Emission).all()
+        companies = (await db.execute(select(Company))).scalars().all()
+        emissions = (await db.execute(select(Emission))).scalars().all()
 
         if format == "csv":
             output = io.StringIO()
@@ -68,20 +69,26 @@ def build_router(get_db) -> APIRouter:
         }
 
     @r.get("/v1/export/companies/{company_id}")
-    def export_company(
+    async def export_company(
         company_id: uuid.UUID,
         request: Request,
-        db: Session = get_db,
+        db: AsyncSession = get_db,
         format: str = Query("json", pattern="^(json|csv)$"),
     ):
         _require_pro(request)
 
-        company = db.query(Company).filter(Company.id == company_id).first()
+        company = (await db.execute(
+            select(Company).where(Company.id == company_id)
+        )).scalars().first()
         if not company:
             raise HTTPException(status_code=404, detail="Company not found")
 
-        emissions = db.query(Emission).filter(Emission.company_id == company_id).all()
-        filings = db.query(Filing).filter(Filing.company_id == company_id).all()
+        emissions = (await db.execute(
+            select(Emission).where(Emission.company_id == company_id)
+        )).scalars().all()
+        filings = (await db.execute(
+            select(Filing).where(Filing.company_id == company_id)
+        )).scalars().all()
 
         if format == "csv":
             output = io.StringIO()

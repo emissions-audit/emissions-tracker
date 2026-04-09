@@ -1,8 +1,8 @@
 import uuid
 
 from fastapi import APIRouter, Query
-from sqlalchemy import desc as sa_desc
-from sqlalchemy.orm import Session
+from sqlalchemy import select, func, desc as sa_desc
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.shared.models import CrossValidation, SourceEntry, Company
 from src.shared.schemas import CrossValidationResponse, DiscrepancyResponse, PaginatedResponse
@@ -12,11 +12,15 @@ def build_router(get_db) -> APIRouter:
     router = APIRouter(tags=["validation"])
 
     @router.get("/v1/companies/{company_id}/validation", response_model=list[CrossValidationResponse])
-    def company_validation(company_id: uuid.UUID, db: Session = get_db):
-        cvs = db.query(CrossValidation).filter(CrossValidation.company_id == company_id).all()
+    async def company_validation(company_id: uuid.UUID, db: AsyncSession = get_db):
+        cvs = (await db.execute(
+            select(CrossValidation).where(CrossValidation.company_id == company_id)
+        )).scalars().all()
         results = []
         for cv in cvs:
-            entries = db.query(SourceEntry).filter(SourceEntry.cross_validation_id == cv.id).all()
+            entries = (await db.execute(
+                select(SourceEntry).where(SourceEntry.cross_validation_id == cv.id)
+            )).scalars().all()
             resp = CrossValidationResponse.model_validate(cv)
             resp.entries = [
                 {"source_type": e.source_type, "value_mt_co2e": float(e.value_mt_co2e), "filing_id": e.filing_id}
@@ -26,27 +30,31 @@ def build_router(get_db) -> APIRouter:
         return results
 
     @router.get("/v1/discrepancies", response_model=PaginatedResponse)
-    def list_discrepancies(
-        db: Session = get_db,
+    async def list_discrepancies(
+        db: AsyncSession = get_db,
         flag: str | None = Query(None),
         year: int | None = Query(None),
         sector: str | None = Query(None),
         limit: int = Query(50, ge=1, le=500),
         offset: int = Query(0, ge=0),
     ):
-        query = db.query(CrossValidation, Company.name).join(
+        stmt = select(CrossValidation, Company.name).join(
             Company, CrossValidation.company_id == Company.id
         )
         if flag:
-            query = query.filter(CrossValidation.flag == flag)
+            stmt = stmt.where(CrossValidation.flag == flag)
         if year:
-            query = query.filter(CrossValidation.year == year)
+            stmt = stmt.where(CrossValidation.year == year)
         if sector:
-            query = query.filter(Company.sector == sector)
+            stmt = stmt.where(Company.sector == sector)
         if not flag:
-            query = query.filter(CrossValidation.flag.in_(["yellow", "red"]))
-        total = query.count()
-        rows = query.order_by(sa_desc(CrossValidation.spread_pct)).offset(offset).limit(limit).all()
+            stmt = stmt.where(CrossValidation.flag.in_(["yellow", "red"]))
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await db.execute(count_stmt)).scalar() or 0
+        rows = (await db.execute(
+            stmt.order_by(sa_desc(CrossValidation.spread_pct)).offset(offset).limit(limit)
+        )).all()
         items = [
             DiscrepancyResponse(
                 company_id=cv.company_id,
@@ -64,15 +72,15 @@ def build_router(get_db) -> APIRouter:
         return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)
 
     @router.get("/v1/discrepancies/top", response_model=list[DiscrepancyResponse])
-    def top_discrepancies(db: Session = get_db, limit: int = Query(10, ge=1, le=50)):
-        rows = (
-            db.query(CrossValidation, Company.name)
+    async def top_discrepancies(db: AsyncSession = get_db, limit: int = Query(10, ge=1, le=50)):
+        stmt = (
+            select(CrossValidation, Company.name)
             .join(Company, CrossValidation.company_id == Company.id)
-            .filter(CrossValidation.flag.in_(["yellow", "red"]))
+            .where(CrossValidation.flag.in_(["yellow", "red"]))
             .order_by(sa_desc(CrossValidation.spread_pct))
             .limit(limit)
-            .all()
         )
+        rows = (await db.execute(stmt)).all()
         return [
             DiscrepancyResponse(
                 company_id=cv.company_id,

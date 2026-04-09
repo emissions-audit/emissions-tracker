@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.shared.models import Company, Emission, Filing, ApiCallLog
 from src.shared.schemas import StatsResponse, AnalyticsSummaryResponse
@@ -13,13 +13,13 @@ def build_router(get_db) -> APIRouter:
     r = APIRouter(tags=["meta"])
 
     @r.get("/v1/stats", response_model=StatsResponse)
-    def stats(db: Session = get_db):
-        company_count = db.query(func.count(Company.id)).scalar() or 0
-        filing_count = db.query(func.count(Filing.id)).scalar() or 0
-        emission_count = db.query(func.count(Emission.id)).scalar() or 0
-        min_year = db.query(func.min(Emission.year)).scalar() or 0
-        max_year = db.query(func.max(Emission.year)).scalar() or 0
-        last_filing = db.query(func.max(Filing.fetched_at)).scalar() or datetime.utcnow()
+    async def stats(db: AsyncSession = get_db):
+        company_count = (await db.execute(select(func.count(Company.id)))).scalar() or 0
+        filing_count = (await db.execute(select(func.count(Filing.id)))).scalar() or 0
+        emission_count = (await db.execute(select(func.count(Emission.id)))).scalar() or 0
+        min_year = (await db.execute(select(func.min(Emission.year)))).scalar() or 0
+        max_year = (await db.execute(select(func.max(Emission.year)))).scalar() or 0
+        last_filing = (await db.execute(select(func.max(Filing.fetched_at)))).scalar() or datetime.utcnow()
 
         return StatsResponse(
             company_count=company_count,
@@ -30,12 +30,12 @@ def build_router(get_db) -> APIRouter:
         )
 
     @r.get("/v1/meta/sectors")
-    def meta_sectors(db: Session = get_db):
-        rows = (
-            db.query(Company.sector, Company.subsector, func.count(Company.id))
+    async def meta_sectors(db: AsyncSession = get_db):
+        stmt = (
+            select(Company.sector, Company.subsector, func.count(Company.id))
             .group_by(Company.sector, Company.subsector)
-            .all()
         )
+        rows = (await db.execute(stmt)).all()
         return [
             {"sector": sector, "subsector": subsector, "company_count": count}
             for sector, subsector, count in rows
@@ -67,42 +67,35 @@ def build_router(get_db) -> APIRouter:
         }
 
     @r.get("/v1/analytics/summary", response_model=AnalyticsSummaryResponse)
-    def analytics_summary(db: Session = get_db, days: int = 30):
+    async def analytics_summary(db: AsyncSession = get_db, days: int = 30):
         cutoff = datetime.utcnow() - timedelta(days=days)
 
-        total_calls = (
-            db.query(func.count(ApiCallLog.id))
-            .filter(ApiCallLog.created_at >= cutoff)
-            .scalar() or 0
-        )
+        total_calls = (await db.execute(
+            select(func.count(ApiCallLog.id)).where(ApiCallLog.created_at >= cutoff)
+        )).scalar() or 0
 
-        unique_keys = (
-            db.query(func.count(func.distinct(ApiCallLog.api_key_hash)))
-            .filter(ApiCallLog.created_at >= cutoff, ApiCallLog.api_key_hash.isnot(None))
-            .scalar() or 0
-        )
+        unique_keys = (await db.execute(
+            select(func.count(func.distinct(ApiCallLog.api_key_hash)))
+            .where(ApiCallLog.created_at >= cutoff, ApiCallLog.api_key_hash.isnot(None))
+        )).scalar() or 0
 
-        avg_rt = (
-            db.query(func.avg(ApiCallLog.response_time_ms))
-            .filter(ApiCallLog.created_at >= cutoff)
-            .scalar() or 0.0
-        )
+        avg_rt = (await db.execute(
+            select(func.avg(ApiCallLog.response_time_ms)).where(ApiCallLog.created_at >= cutoff)
+        )).scalar() or 0.0
 
-        top_endpoints = (
-            db.query(ApiCallLog.endpoint, func.count(ApiCallLog.id).label("calls"))
-            .filter(ApiCallLog.created_at >= cutoff)
+        top_endpoints = (await db.execute(
+            select(ApiCallLog.endpoint, func.count(ApiCallLog.id).label("calls"))
+            .where(ApiCallLog.created_at >= cutoff)
             .group_by(ApiCallLog.endpoint)
             .order_by(func.count(ApiCallLog.id).desc())
             .limit(10)
-            .all()
-        )
+        )).all()
 
-        tier_counts = (
-            db.query(ApiCallLog.tier, func.count(ApiCallLog.id))
-            .filter(ApiCallLog.created_at >= cutoff)
+        tier_counts = (await db.execute(
+            select(ApiCallLog.tier, func.count(ApiCallLog.id))
+            .where(ApiCallLog.created_at >= cutoff)
             .group_by(ApiCallLog.tier)
-            .all()
-        )
+        )).all()
 
         return AnalyticsSummaryResponse(
             period_days=days,
