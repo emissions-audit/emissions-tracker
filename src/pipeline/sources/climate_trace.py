@@ -55,30 +55,11 @@ def parse_asset_emissions(
     )
 
 
-PAGE_LIMIT = 500
+ASSET_LIMIT = 500
 
 
 class ClimateTraceSource(BaseSource):
     name = "climate_trace"
-
-    async def _fetch_all_assets(
-        self, client: httpx.AsyncClient, owner: str, year: int
-    ) -> list[dict]:
-        """Paginate through all assets for an owner+year."""
-        assets: list[dict] = []
-        offset = 0
-        while True:
-            resp = await client.get(
-                CLIMATE_TRACE_API,
-                params={"owners": owner, "year": year, "limit": PAGE_LIMIT, "offset": offset},
-            )
-            resp.raise_for_status()
-            page = resp.json().get("assets", [])
-            assets.extend(page)
-            if len(page) < PAGE_LIMIT:
-                break
-            offset += PAGE_LIMIT
-        return assets
 
     async def fetch_emissions(self, tickers: list[str], years: list[int]) -> list[RawEmission]:
         if not tickers:
@@ -92,7 +73,12 @@ class ClimateTraceSource(BaseSource):
                     continue
                 for year in years:
                     try:
-                        assets = await self._fetch_all_assets(client, owner, year)
+                        resp = await client.get(
+                            CLIMATE_TRACE_API,
+                            params={"owners": owner, "year": year, "limit": ASSET_LIMIT},
+                        )
+                        resp.raise_for_status()
+                        assets = resp.json().get("assets", [])
                         emission = parse_asset_emissions(ticker, assets, year)
                         if emission:
                             results.append(emission)
