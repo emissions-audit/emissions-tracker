@@ -98,25 +98,26 @@ class EpaGhgrpSource(BaseSource):
         all_records: list[dict] = []
 
         async with httpx.AsyncClient(timeout=60.0) as client:
-            start = 0
-            while True:
-                end = start + PAGE_SIZE - 1
-                url = f"{EPA_GHGRP_API}/rows/{start}:{end}/JSON"
-                try:
-                    resp = await client.get(url)
-                    resp.raise_for_status()
-                    page = resp.json()
-                except httpx.HTTPError:
-                    break
+            for year in years:
+                start = 0
+                while True:
+                    end = start + PAGE_SIZE - 1
+                    url = f"{EPA_GHGRP_API}/YEAR/{year}/rows/{start}:{end}/JSON"
+                    try:
+                        resp = await client.get(url)
+                        resp.raise_for_status()
+                        page = resp.json()
+                    except httpx.HTTPError:
+                        break
 
-                if not page:
-                    break
+                    if not page:
+                        break
 
-                all_records.extend(page)
+                    all_records.extend(page)
 
-                if len(page) < PAGE_SIZE:
-                    break
-                start += PAGE_SIZE
+                    if len(page) < PAGE_SIZE:
+                        break
+                    start += PAGE_SIZE
 
         results = parse_ghgrp_response(all_records, years)
 
