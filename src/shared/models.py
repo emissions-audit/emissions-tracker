@@ -105,7 +105,7 @@ class CrossValidation(Base):
     source_count: Mapped[int] = mapped_column(Integer)
     min_value: Mapped[float] = mapped_column(Numeric(precision=20, scale=2))
     max_value: Mapped[float] = mapped_column(Numeric(precision=20, scale=2))
-    spread_pct: Mapped[float] = mapped_column(Numeric(precision=8, scale=2))
+    spread_pct: Mapped[float] = mapped_column(Numeric(precision=12, scale=2))
     flag: Mapped[str] = mapped_column(String(10))
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
