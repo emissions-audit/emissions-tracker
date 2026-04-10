@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.routes import companies, emissions
 from src.api.routes import validation, pledges, filings
 from src.api.routes import meta, export
-from src.api.routes import health
+from src.api.routes import health, coverage
 from src.api.middleware.auth import ApiKeyMiddleware
 from src.api.middleware.rate_limit import RateLimitMiddleware
 from src.api.middleware.analytics import AnalyticsMiddleware
@@ -63,6 +63,7 @@ def create_app(db_session_override: AsyncSession | None = None) -> FastAPI:
     app.include_router(meta.build_router(get_db))
     app.include_router(export.build_router(get_db))
     app.include_router(health.build_router(get_db))
+    app.include_router(coverage.build_router(get_db))
 
     return app
 

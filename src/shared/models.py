@@ -1,9 +1,13 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+# JSON type that renders as JSONB on PostgreSQL and falls back to JSON on SQLite
+# (used by CoverageSnapshot; keeps GIN-index semantics on Postgres).
+_JSONB = JSON().with_variant(JSONB(), "postgresql")
 
 
 class Base(DeclarativeBase):
@@ -169,12 +173,12 @@ class CoverageSnapshot(Base):
     year_min: Mapped[int | None] = mapped_column(Integer)
     year_max: Mapped[int | None] = mapped_column(Integer)
 
-    by_source_year: Mapped[dict] = mapped_column(JSONB)
-    by_company_source: Mapped[dict] = mapped_column(JSONB)
-    by_company_year: Mapped[dict] = mapped_column(JSONB)
+    by_source_year: Mapped[dict] = mapped_column(_JSONB)
+    by_company_source: Mapped[dict] = mapped_column(_JSONB)
+    by_company_year: Mapped[dict] = mapped_column(_JSONB)
 
-    cv_by_flag: Mapped[dict] = mapped_column(JSONB)
+    cv_by_flag: Mapped[dict] = mapped_column(_JSONB)
     cv_coverage_pct: Mapped[float] = mapped_column(Numeric(precision=5, scale=2))
 
-    alerts: Mapped[list] = mapped_column(JSONB)
+    alerts: Mapped[list] = mapped_column(_JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
