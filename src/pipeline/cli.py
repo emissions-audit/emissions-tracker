@@ -19,6 +19,7 @@ from src.pipeline.sources.epa_ghgrp import EpaGhgrpSource
 from src.pipeline.sources.eu_ets import EuEtsSource
 from src.pipeline.validate import compute_cross_validations
 from src.pipeline.export import export_all
+from src.pipeline.coverage import create_snapshot, format_report, format_brief
 
 app = typer.Typer(name="emissions-pipeline", help="Corporate emissions data pipeline")
 
@@ -115,6 +116,16 @@ def ingest(
     session = _get_sync_session()
     count = _upsert_emissions(session, raw_emissions)
     typer.echo(f"Upserted {count} emissions records")
+
+    # Post-ingest coverage snapshot
+    snapshot = create_snapshot(session, trigger="post_ingest", source_filter=source)
+    brief_data = {
+        "total_emissions": snapshot.total_emissions,
+        "by_source_year": snapshot.by_source_year,
+        "cv_coverage_pct": float(snapshot.cv_coverage_pct),
+        "alerts": snapshot.alerts,
+    }
+    typer.echo(format_brief(brief_data))
     session.close()
 
 
@@ -170,6 +181,18 @@ def validate():
     for r in results:
         flags[r["flag"]] += 1
     typer.echo(f"Flags: {flags}")
+
+    # Post-validate coverage snapshot
+    session_cov = _get_sync_session()
+    snapshot = create_snapshot(session_cov, trigger="post_validate")
+    brief_data = {
+        "total_emissions": snapshot.total_emissions,
+        "by_source_year": snapshot.by_source_year,
+        "cv_coverage_pct": float(snapshot.cv_coverage_pct),
+        "alerts": snapshot.alerts,
+    }
+    typer.echo(format_brief(brief_data))
+    session_cov.close()
 
 
 @app.command()
@@ -230,6 +253,59 @@ def export(
         typer.echo(f"Exported {len(files)} files:")
         for name, path in files.items():
             typer.echo(f"  {name}: {path}")
+    finally:
+        session.close()
+
+
+@app.command()
+def coverage(
+    full: bool = typer.Option(False, "--full", help="Show all companies"),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON"),
+    no_save: bool = typer.Option(False, "--no-save", help="Don't persist snapshot"),
+):
+    """Compute and display data coverage report."""
+    session = _get_sync_session()
+    try:
+        snapshot = create_snapshot(session, trigger="manual", save=not no_save)
+        if json_output:
+            import json
+            data = {
+                "computed_at": snapshot.computed_at.isoformat(),
+                "trigger": snapshot.trigger,
+                "summary": {
+                    "total_companies": snapshot.total_companies,
+                    "total_emissions": snapshot.total_emissions,
+                    "total_filings": snapshot.total_filings,
+                    "total_cross_validations": snapshot.total_cross_validations,
+                    "year_range": {"min": snapshot.year_min, "max": snapshot.year_max},
+                    "cv_coverage_pct": float(snapshot.cv_coverage_pct),
+                    "sources_active": sum(1 for v in snapshot.by_source_year.values() if v),
+                    "sources_total": len(snapshot.by_source_year),
+                },
+                "by_source_year": snapshot.by_source_year,
+                "by_company_source": snapshot.by_company_source,
+                "by_company_year": snapshot.by_company_year,
+                "cv_by_flag": snapshot.cv_by_flag,
+                "alerts": snapshot.alerts,
+            }
+            typer.echo(json.dumps(data, indent=2))
+        else:
+            data = {
+                "computed_at": snapshot.computed_at,
+                "total_companies": snapshot.total_companies,
+                "total_emissions": snapshot.total_emissions,
+                "total_filings": snapshot.total_filings,
+                "total_cross_validations": snapshot.total_cross_validations,
+                "year_min": snapshot.year_min,
+                "year_max": snapshot.year_max,
+                "by_source_year": snapshot.by_source_year,
+                "by_company_source": snapshot.by_company_source,
+                "by_company_year": snapshot.by_company_year,
+                "cv_by_flag": snapshot.cv_by_flag,
+                "cv_coverage_pct": float(snapshot.cv_coverage_pct),
+                "alerts": snapshot.alerts,
+            }
+            typer.echo(format_report(data, full=full))
     finally:
         session.close()
 
