@@ -112,3 +112,61 @@ class TestComputeAlerts:
         alerts = compute_alerts(current, previous=None)
         regression = [a for a in alerts if a["type"] == "regression"]
         assert len(regression) == 0
+
+
+from src.pipeline.coverage import format_report, format_brief
+
+
+class TestFormatReport:
+    """Test the CLI report output formatting."""
+
+    def _make_snapshot_dict(self):
+        return {
+            "computed_at": datetime(2026, 4, 10, 14, 30),
+            "total_companies": 20,
+            "total_emissions": 233,
+            "total_filings": 15,
+            "total_cross_validations": 24,
+            "year_min": 2022,
+            "year_max": 2023,
+            "by_source_year": {
+                "epa_ghgrp": {"2022": 112, "2023": 121},
+                "climate_trace": {},
+                "eu_ets": {},
+                "10k_xbrl": {},
+                "cdp_response": {},
+                "carb_sb253": {},
+            },
+            "by_company_source": {
+                "XOM": {"epa_ghgrp": 8, "climate_trace": 0, "eu_ets": 0, "10k_xbrl": 0, "cdp_response": 0, "carb_sb253": 0},
+            },
+            "by_company_year": {"XOM": {"2022": 4, "2023": 4}},
+            "cv_by_flag": {"green": 1, "yellow": 0, "red": 23},
+            "cv_coverage_pct": 4.2,
+            "alerts": [
+                {"type": "staleness", "severity": "warning", "message": "eu_ets has never produced data", "detail": {}},
+            ],
+        }
+
+    def test_format_report_contains_summary(self):
+        output = format_report(self._make_snapshot_dict())
+        assert "Companies: 20" in output
+        assert "Emissions: 233" in output
+        assert "Sources active: 1/6" in output
+
+    def test_format_report_contains_source_year_table(self):
+        output = format_report(self._make_snapshot_dict())
+        assert "epa_ghgrp" in output
+        assert "112" in output
+        assert "121" in output
+
+    def test_format_report_contains_alerts(self):
+        output = format_report(self._make_snapshot_dict())
+        assert "eu_ets has never produced data" in output
+
+    def test_format_brief_is_short(self):
+        data = self._make_snapshot_dict()
+        output = format_brief(data)
+        assert "Emissions: 233" in output
+        assert "Sources active: 1/6" in output
+        assert "112" not in output

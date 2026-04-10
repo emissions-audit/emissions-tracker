@@ -274,3 +274,128 @@ def create_snapshot(
         session.commit()
 
     return snapshot
+
+
+# ---------------------------------------------------------------------------
+# CLI formatting
+# ---------------------------------------------------------------------------
+
+def _sources_active(by_source_year: dict) -> int:
+    """Count sources that have at least one year with records."""
+    return sum(1 for years in by_source_year.values() if years)
+
+
+def format_report(data: dict, full: bool = False) -> str:
+    """Full CLI coverage report."""
+    by_sy = data["by_source_year"]
+    by_cs = data["by_company_source"]
+    cv_flags = data["cv_by_flag"]
+    alerts = data.get("alerts", [])
+    active = _sources_active(by_sy)
+    total_sources = len(by_sy)
+
+    computed = data["computed_at"]
+    if isinstance(computed, datetime):
+        ts = computed.strftime("%Y-%m-%d %H:%M UTC")
+    else:
+        ts = str(computed)
+
+    lines = [
+        f"\U0001f4ca Coverage Report \u2014 {ts}",
+        "\u2501" * 40,
+        "",
+        "\U0001f4c8 Summary",
+        f"   Companies: {data['total_companies']} | Emissions: {data['total_emissions']} | Filings: {data['total_filings']}",
+        f"   Years: {data['year_min']}\u2013{data['year_max']} | Sources active: {active}/{total_sources}",
+        f"   Cross-validation coverage: {data['cv_coverage_pct']}%",
+        "",
+    ]
+
+    # Source x Year table
+    all_years = sorted({y for years in by_sy.values() for y in years})
+    lines.append("\U0001f4e1 Source \u00d7 Year")
+    if all_years:
+        header = "   {:20s}".format("Source") + "".join(f"{y:>7}" for y in all_years)
+        lines.append(header)
+        for source in sorted(by_sy.keys()):
+            years = by_sy[source]
+            row = "   {:20s}".format(source) + "".join(
+                f"{years.get(y, 0):>7}" if years.get(y, 0) > 0 else "      \u2014"
+                for y in all_years
+            )
+            lines.append(row)
+    else:
+        lines.append("   (no data)")
+    lines.append("")
+
+    # Company x Source table
+    tickers = sorted(by_cs.keys(), key=lambda t: sum(by_cs[t].values()), reverse=True)
+    if not full:
+        tickers = tickers[:10]
+    sources_with_data = [s for s in sorted(by_sy.keys()) if _sources_active({s: by_sy[s]})]
+    if not sources_with_data:
+        sources_with_data = sorted(by_sy.keys())[:3]
+
+    lines.append(f"\U0001f3e2 Company \u00d7 Source (top {len(tickers)} by record count)")
+    header = "   {:8s}".format("Ticker") + "".join(f"{s:>15}" for s in sources_with_data)
+    lines.append(header)
+    for ticker in tickers:
+        src_data = by_cs[ticker]
+        row = "   {:8s}".format(ticker) + "".join(
+            f"{src_data.get(s, 0):>15}" if src_data.get(s, 0) > 0 else "              \u2014"
+            for s in sources_with_data
+        )
+        lines.append(row)
+    total_tickers = len(by_cs)
+    if not full and total_tickers > 10:
+        lines.append(f"   ({total_tickers} total \u2014 use --full to show all)")
+    lines.append("")
+
+    # Cross-validation
+    lines.append("\U0001f500 Cross-Validation")
+    lines.append(f"   Green: {cv_flags.get('green', 0)} | Yellow: {cv_flags.get('yellow', 0)} | Red: {cv_flags.get('red', 0)}")
+    lines.append(f"   Coverage: {data['cv_coverage_pct']}% of company/year/scope tuples have \u22652 sources")
+    lines.append("")
+
+    # Alerts
+    if alerts:
+        lines.append("\U0001f6a8 Alerts")
+        for a in alerts:
+            icon = {"critical": "\U0001f534", "warning": "\u26a0\ufe0f", "info": "\u2139\ufe0f"}.get(a["severity"], "\u2022")
+            lines.append(f"   {icon}  {a['message']}")
+    else:
+        lines.append("\u2705 No alerts")
+
+    return "\n".join(lines)
+
+
+def format_brief(data: dict) -> str:
+    """Abbreviated post-ingest summary (summary + alert counts only)."""
+    by_sy = data["by_source_year"]
+    active = _sources_active(by_sy)
+    total_sources = len(by_sy)
+    alerts = data.get("alerts", [])
+
+    alert_counts = {"critical": 0, "warning": 0, "info": 0}
+    for a in alerts:
+        alert_counts[a.get("severity", "info")] += 1
+
+    lines = [
+        "\U0001f4ca Coverage updated:",
+        f"   Emissions: {data['total_emissions']} | Sources active: {active}/{total_sources} | CV coverage: {data['cv_coverage_pct']}%",
+    ]
+
+    total_alerts = sum(alert_counts.values())
+    if total_alerts > 0:
+        parts = []
+        if alert_counts["critical"]:
+            parts.append(f"{alert_counts['critical']} critical")
+        if alert_counts["warning"]:
+            parts.append(f"{alert_counts['warning']} warnings")
+        if alert_counts["info"]:
+            parts.append(f"{alert_counts['info']} info")
+        lines.append(f"   \U0001f6a8 {', '.join(parts)} \u2014 run `pipeline coverage` for details")
+    else:
+        lines.append("   \u2705 No alerts")
+
+    return "\n".join(lines)
