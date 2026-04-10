@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -150,4 +151,30 @@ class ApiCallLog(Base):
     api_key_hash: Mapped[str | None] = mapped_column(String(16))
     tier: Mapped[str] = mapped_column(String(20), default="anonymous")
     client_ip: Mapped[str | None] = mapped_column(String(45))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class CoverageSnapshot(Base):
+    __tablename__ = "coverage_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    computed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    trigger: Mapped[str] = mapped_column(String(20))  # post_ingest, post_validate, manual
+    source_filter: Mapped[str | None] = mapped_column(String(50))
+
+    total_companies: Mapped[int] = mapped_column(Integer)
+    total_emissions: Mapped[int] = mapped_column(Integer)
+    total_filings: Mapped[int] = mapped_column(Integer)
+    total_cross_validations: Mapped[int] = mapped_column(Integer)
+    year_min: Mapped[int | None] = mapped_column(Integer)
+    year_max: Mapped[int | None] = mapped_column(Integer)
+
+    by_source_year: Mapped[dict] = mapped_column(JSONB)
+    by_company_source: Mapped[dict] = mapped_column(JSONB)
+    by_company_year: Mapped[dict] = mapped_column(JSONB)
+
+    cv_by_flag: Mapped[dict] = mapped_column(JSONB)
+    cv_coverage_pct: Mapped[float] = mapped_column(Numeric(precision=5, scale=2))
+
+    alerts: Mapped[list] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
