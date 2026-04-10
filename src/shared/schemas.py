@@ -142,3 +142,54 @@ class AnalyticsSummaryResponse(BaseModel):
     avg_response_time_ms: float
     top_endpoints: list[EndpointCount]
     calls_by_tier: dict[str, int]
+
+
+class CoverageAlertResponse(BaseModel):
+    type: str
+    severity: str
+    message: str
+    detail: dict[str, Any]
+
+
+class CoverageSummary(BaseModel):
+    total_companies: int
+    total_emissions: int
+    total_filings: int
+    total_cross_validations: int
+    year_range: dict[str, int | None]
+    cv_coverage_pct: float
+    sources_active: int
+    sources_total: int
+
+
+class CoverageResponse(BaseModel):
+    computed_at: datetime
+    trigger: str
+    summary: CoverageSummary
+    by_source_year: dict[str, dict[str, int]] | None = None
+    by_company_source: dict[str, dict[str, int]] | None = None
+    by_company_year: dict[str, dict[str, int]] | None = None
+    cv_by_flag: dict[str, int]
+    alerts: list[CoverageAlertResponse]
+
+
+class CoverageHistoryEntry(BaseModel):
+    computed_at: datetime
+    total_emissions: int
+    sources_active: int
+    cv_coverage_pct: float
+    cv_by_flag: dict[str, int]
+    alert_count: int
+
+
+class CoverageHistoryResponse(BaseModel):
+    snapshots: list[CoverageHistoryEntry]
+
+
+class CoverageHealthResponse(BaseModel):
+    status: str
+    computed_at: datetime | None
+    alerts_critical: int
+    alerts_warning: int
+    alerts_info: int
+    alerts: list[CoverageAlertResponse]
