@@ -2,12 +2,64 @@ import uuid
 
 import pytest
 from sqlalchemy import create_engine as create_sync_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
 from src.shared.models import Base, Company, Filing, Emission, CrossValidation, SourceEntry, Pledge
 from src.api.main import create_app
+
+
+class _SyncAsyncSession:
+    """
+    Thin adapter that exposes a synchronous SQLAlchemy Session through the
+    AsyncSession method surface used by the routes.
+
+    Routes are ``async def`` and ``await session.execute(...)``, which cannot
+    accept a sync ``Session`` directly. An in-memory aiosqlite engine would
+    hit event-loop mismatches with ``TestClient`` (which spins up its own
+    anyio loop per request), so this adapter stays with the sync engine and
+    wraps every async method to delegate synchronously.
+    """
+
+    def __init__(self, sync_session):
+        self._session = sync_session
+
+    async def execute(self, *args, **kwargs):
+        return self._session.execute(*args, **kwargs)
+
+    async def scalar(self, *args, **kwargs):
+        return self._session.scalar(*args, **kwargs)
+
+    async def scalars(self, *args, **kwargs):
+        return self._session.scalars(*args, **kwargs)
+
+    async def commit(self):
+        return self._session.commit()
+
+    async def rollback(self):
+        return self._session.rollback()
+
+    async def close(self):
+        return self._session.close()
+
+    async def refresh(self, instance, *args, **kwargs):
+        return self._session.refresh(instance, *args, **kwargs)
+
+    async def flush(self, *args, **kwargs):
+        return self._session.flush(*args, **kwargs)
+
+    async def get(self, *args, **kwargs):
+        return self._session.get(*args, **kwargs)
+
+    async def delete(self, instance):
+        return self._session.delete(instance)
+
+    async def merge(self, instance, *args, **kwargs):
+        return self._session.merge(instance, *args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._session, name)
 
 
 @pytest.fixture
@@ -23,7 +75,7 @@ def db_session():
     Base.metadata.create_all(engine)
     factory = sessionmaker(bind=engine)
     session = factory()
-    yield session
+    yield _SyncAsyncSession(session)
     session.close()
     engine.dispose()
 
@@ -54,7 +106,7 @@ def seeded_session(db_session):
         Emission(id=uuid.uuid4(), company_id=exxon_id, year=2023, scope="1",
                  value_mt_co2e=112_000_000, source_id=filing2_id),
     ])
-    db_session.commit()
+    db_session._session.commit()
 
     # Cross-validation fixtures (Task 12)
     cv_id = uuid.UUID("00000000-0000-0000-0000-000000000020")
@@ -67,7 +119,7 @@ def seeded_session(db_session):
         SourceEntry(id=uuid.uuid4(), cross_validation_id=cv_id,
                     source_type="satellite", value_mt_co2e=72_000_000),
     ])
-    db_session.commit()
+    db_session._session.commit()
 
     # Pledge fixtures (Task 13)
     db_session.add_all([
@@ -76,7 +128,7 @@ def seeded_session(db_session):
                baseline_year=2016, baseline_value_mt_co2e=1_700_000_000,
                source_id=filing1_id),
     ])
-    db_session.commit()
+    db_session._session.commit()
 
     return db_session
 

@@ -4,10 +4,34 @@ from fastapi import APIRouter, Query
 from sqlalchemy import select, func, desc as sa_desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.shared.corrections import apply_value, build_provenance, get_corrections
 from src.shared.models import Emission, Company
-from src.shared.schemas import EmissionResponse, PaginatedResponse, CompareRow
+from src.shared.schemas import (
+    CompareRow,
+    EmissionResponse,
+    PaginatedResponse,
+    ProvenanceResponse,
+)
 
 router = APIRouter(tags=["emissions"])
+
+
+def _annotate(e: Emission, ticker: str | None, corrections: list) -> EmissionResponse:
+    base = EmissionResponse.model_validate(e)
+    base.value_mt_co2e = float(
+        apply_value(
+            "value_mt_co2e",
+            base.value_mt_co2e,
+            ticker,
+            base.year,
+            base.scope,
+            corrections,
+        )
+    )
+    prov = build_provenance(ticker, base.year, base.scope, corrections)
+    if prov is not None:
+        base.provenance = ProvenanceResponse.model_validate(prov)
+    return base
 
 
 def build_router(get_db) -> APIRouter:
@@ -35,8 +59,15 @@ def build_router(get_db) -> APIRouter:
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = (await db.execute(count_stmt)).scalar() or 0
         items = (await db.execute(stmt.offset(offset).limit(limit))).scalars().all()
+
+        ticker_row = (
+            await db.execute(select(Company.ticker).where(Company.id == company_id))
+        ).first()
+        ticker = ticker_row[0] if ticker_row else None
+        corrections = get_corrections()
+
         return PaginatedResponse(
-            items=[EmissionResponse.model_validate(e) for e in items],
+            items=[_annotate(e, ticker, corrections) for e in items],
             total=total, limit=limit, offset=offset,
         )
 
@@ -66,8 +97,20 @@ def build_router(get_db) -> APIRouter:
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = (await db.execute(count_stmt)).scalar() or 0
         items = (await db.execute(stmt.offset(offset).limit(limit))).scalars().all()
+
+        company_ids = list({e.company_id for e in items})
+        ticker_map: dict[uuid.UUID, str | None] = {}
+        if company_ids:
+            rows = (
+                await db.execute(
+                    select(Company.id, Company.ticker).where(Company.id.in_(company_ids))
+                )
+            ).all()
+            ticker_map = {cid: ticker for cid, ticker in rows}
+        corrections = get_corrections()
+
         return PaginatedResponse(
-            items=[EmissionResponse.model_validate(e) for e in items],
+            items=[_annotate(e, ticker_map.get(e.company_id), corrections) for e in items],
             total=total, limit=limit, offset=offset,
         )
 
@@ -83,7 +126,7 @@ def build_router(get_db) -> APIRouter:
         year_list = [int(y.strip()) for y in years.split(",")]
 
         stmt = (
-            select(Emission, Company.name)
+            select(Emission, Company.name, Company.ticker)
             .join(Company)
             .where(
                 Emission.company_id.in_(company_ids),
@@ -93,6 +136,7 @@ def build_router(get_db) -> APIRouter:
         )
         result = await db.execute(stmt)
         rows = result.all()
+        corrections = get_corrections()
 
         return [
             CompareRow(
@@ -100,9 +144,18 @@ def build_router(get_db) -> APIRouter:
                 company_name=name,
                 year=e.year,
                 scope=e.scope,
-                value_mt_co2e=float(e.value_mt_co2e),
+                value_mt_co2e=float(
+                    apply_value(
+                        "value_mt_co2e",
+                        e.value_mt_co2e,
+                        ticker,
+                        e.year,
+                        e.scope,
+                        corrections,
+                    )
+                ),
             )
-            for e, name in rows
+            for e, name, ticker in rows
         ]
 
     return r

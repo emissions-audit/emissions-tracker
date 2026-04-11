@@ -13,6 +13,7 @@ This project is MIT licensed. By contributing, you agree that your contributions
 - [Code Style and Linting](#code-style-and-linting)
 - [Adding a New Data Source](#adding-a-new-data-source)
 - [Submitting Emissions Data](#submitting-emissions-data)
+- [Challenge a Number](#challenge-a-number)
 - [Pull Request Guidelines](#pull-request-guidelines)
 - [Issue Guidelines](#issue-guidelines)
 
@@ -217,6 +218,51 @@ Prepare your data as **JSON** or **CSV** with the following fields:
 ```
 
 Maintainers will validate and ingest submitted data through the pipeline's validation step (`emissions-pipeline validate`).
+
+---
+
+## Challenge a Number
+
+If you believe a specific emissions figure in the database is wrong, you can challenge it. Accepted corrections become part of the public record: they are logged in [CORRECTIONS.md](CORRECTIONS.md) and surfaced through the API under a `provenance` field on the corrected emission row, crediting the contributor.
+
+### How to file a challenge
+
+1. Open a GitHub Issue using the **Challenge a Number** template (`.github/ISSUE_TEMPLATE/challenge-a-number.yml`).
+2. Fill in the structured fields: company ticker, year, scope, currently reported value, proposed value, primary source URL, and rationale.
+3. The source URL must be publicly accessible and authoritative (SEC filing, regulator database, peer-reviewed study, official company report). Unsourced claims cannot be accepted.
+
+### What happens next
+
+- A maintainer triages the issue and either accepts, rejects, or requests more evidence.
+- If accepted, the correction is added to `data/corrections/corrections.json` and becomes visible in the API response for that emission. `CORRECTIONS.md` is updated with the entry and contributor attribution.
+- Rejected challenges are closed with a comment explaining why. You're welcome to reopen with additional evidence.
+
+### What a corrected API response looks like
+
+```json
+{
+  "id": "...",
+  "company_id": "...",
+  "year": 2023,
+  "scope": "Scope 1",
+  "value_mt_co2e": 125000.0,
+  "provenance": {
+    "contributors": ["@alice"],
+    "corrections": [
+      {
+        "field": "value_mt_co2e",
+        "old_value": 118000.0,
+        "new_value": 125000.0,
+        "source_url": "https://...",
+        "contributor": "@alice",
+        "accepted_date": "2026-04-15"
+      }
+    ]
+  }
+}
+```
+
+The `provenance` field is absent on emissions that have not been corrected.
 
 ---
 

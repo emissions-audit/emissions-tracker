@@ -15,7 +15,7 @@ def test_create_company(db_session):
         website="https://www.shell.com",
     )
     db_session.add(company)
-    db_session.commit()
+    db_session._session.commit()
 
     result = db_session.query(Company).first()
     assert result.name == "Shell plc"
@@ -37,7 +37,7 @@ def test_create_filing_and_emission(db_session):
                         methodology="ghg_protocol", verified=True, source_id=filing_id)
 
     db_session.add_all([company, filing, emission])
-    db_session.commit()
+    db_session._session.commit()
 
     result = db_session.query(Emission).first()
     assert result.scope == "1"
@@ -58,7 +58,7 @@ def test_create_cross_validation(db_session):
                         source_type="regulatory", value_mt_co2e=100_000_000.0)
 
     db_session.add_all([company, cv, entry])
-    db_session.commit()
+    db_session._session.commit()
 
     result = db_session.query(CrossValidation).first()
     assert result.flag == "red"
@@ -69,7 +69,7 @@ def test_create_api_key(db_session):
     key = ApiKey(id=uuid.uuid4(), key_hash="sha256hashvalue", email="dev@example.com",
                  tier="free", rate_limit=100)
     db_session.add(key)
-    db_session.commit()
+    db_session._session.commit()
 
     result = db_session.query(ApiKey).first()
     assert result.tier == "free"

@@ -18,6 +18,20 @@ class CompanyResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class CorrectionEntry(BaseModel):
+    field: str
+    old_value: Any
+    new_value: Any
+    source_url: str
+    contributor: str
+    accepted_date: str
+
+
+class ProvenanceResponse(BaseModel):
+    contributors: list[str]
+    corrections: list[CorrectionEntry]
+
+
 class EmissionResponse(BaseModel):
     id: uuid.UUID
     company_id: uuid.UUID
@@ -27,6 +41,7 @@ class EmissionResponse(BaseModel):
     methodology: str | None = None
     verified: bool | None = None
     source_id: uuid.UUID | None = None
+    provenance: ProvenanceResponse | None = None
 
     model_config = {"from_attributes": True}
 

@@ -1,0 +1,81 @@
+name: "Challenge a Number"
+description: "Propose a correction to an emissions figure in the database"
+title: "data: <TICKER> <YEAR> <SCOPE> — challenge"
+labels: ["correction", "data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to challenge an emissions figure. Corrections must cite a primary source — unsourced claims cannot be accepted.
+        See [CORRECTIONS.md](../../blob/main/CORRECTIONS.md) for the current log of accepted corrections.
+
+  - type: input
+    id: ticker
+    attributes:
+      label: "Company ticker"
+      description: "e.g. XOM, CVX, BP"
+      placeholder: "XOM"
+    validations:
+      required: true
+
+  - type: input
+    id: year
+    attributes:
+      label: "Reporting year"
+      placeholder: "2023"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: "Scope"
+      options:
+        - "Scope 1"
+        - "Scope 2"
+        - "Scope 3"
+        - "Total"
+    validations:
+      required: true
+
+  - type: input
+    id: reported_value
+    attributes:
+      label: "Currently reported value (mt CO2e)"
+      description: "The value the API currently returns."
+    validations:
+      required: true
+
+  - type: input
+    id: proposed_value
+    attributes:
+      label: "Proposed value (mt CO2e)"
+      description: "The corrected value you believe is accurate."
+    validations:
+      required: true
+
+  - type: input
+    id: source_url
+    attributes:
+      label: "Primary source URL"
+      description: "Link to the authoritative source (filing, regulator report, peer-reviewed study)."
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: "Rationale"
+      description: "Why is the currently reported value wrong? What did the source say?"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: agreements
+    attributes:
+      label: "Agreements"
+      options:
+        - label: "I have read CORRECTIONS.md and the correction is not already logged"
+          required: true
+        - label: "The source URL is publicly accessible and authoritative"
+          required: true
