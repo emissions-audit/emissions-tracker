@@ -10,7 +10,7 @@ def _add_pro_key(session, raw_key="pro-key-123"):
         id=uuid.uuid4(), key_hash=key_hash, email="pro@example.com",
         tier="pro", rate_limit=1000,
     ))
-    session.commit()
+    session._session.commit()
     return raw_key
 
 

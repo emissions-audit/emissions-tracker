@@ -22,7 +22,7 @@ def test_request_with_valid_key(client, seeded_session):
             rate_limit=1000,
         )
     )
-    seeded_session.commit()
+    seeded_session._session.commit()
     resp = client.get("/v1/companies", headers={"X-API-Key": raw_key})
     assert resp.status_code == 200
     assert resp.headers.get("X-RateLimit-Limit") == "1000"

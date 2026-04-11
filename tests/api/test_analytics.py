@@ -44,7 +44,7 @@ class TestAnalyticsMiddleware:
             id=uuid.uuid4(), key_hash=key_hash,
             email="test@example.com", tier="pro", rate_limit=1000,
         ))
-        seeded_session.commit()
+        seeded_session._session.commit()
 
         app = create_app(db_session_override=seeded_session)
         client = TestClient(app)

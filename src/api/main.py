@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +35,14 @@ def create_app(db_session_override: AsyncSession | None = None) -> FastAPI:
         async def _get_db() -> AsyncGenerator[AsyncSession, None]:
             yield db_session_override
 
-        session_factory = None
+        # Middleware expects a factory that returns an async context manager
+        # yielding a session. Wrap the override so auth/analytics can run in
+        # tests without spinning up a real async engine.
+        @asynccontextmanager
+        async def _override_factory():
+            yield db_session_override
+
+        session_factory = _override_factory
     else:
         from src.shared.db import create_session_factory
         factory = create_session_factory()
@@ -49,9 +57,8 @@ def create_app(db_session_override: AsyncSession | None = None) -> FastAPI:
 
     # Middleware (last added = outermost = runs first)
     app.add_middleware(RateLimitMiddleware)
-    if session_factory is not None:
-        app.add_middleware(ApiKeyMiddleware, db_session_factory=session_factory)
-        app.add_middleware(AnalyticsMiddleware, db_session_factory=session_factory)
+    app.add_middleware(ApiKeyMiddleware, db_session_factory=session_factory)
+    app.add_middleware(AnalyticsMiddleware, db_session_factory=session_factory)
 
     # Build fresh routers for this app instance to avoid route accumulation
     # when create_app is called multiple times (e.g. once per test).
