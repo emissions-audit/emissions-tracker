@@ -24,7 +24,7 @@ TICKER_TO_OWNER = {
 
 def _asset_owned_by(asset: dict, owner: str) -> bool:
     """Check if any of an asset's Owners match the target CompanyName."""
-    for o in asset.get("Owners", []):
+    for o in (asset.get("Owners") or []):
         if o.get("CompanyName") == owner:
             return True
     return False
@@ -43,7 +43,7 @@ def parse_asset_emissions(
     for asset in assets:
         if owner and not _asset_owned_by(asset, owner):
             continue
-        for entry in asset.get("EmissionsSummary", []):
+        for entry in (asset.get("EmissionsSummary") or []):
             if entry.get("Gas") == "co2e_100yr":
                 total += entry.get("EmissionsQuantity", 0)
 

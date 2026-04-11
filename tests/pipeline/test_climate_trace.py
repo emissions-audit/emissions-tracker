@@ -63,6 +63,12 @@ def test_asset_owned_by_empty_owners():
     assert _asset_owned_by(asset, "Exxon Mobil Corp") is False
 
 
+def test_asset_owned_by_null_owners():
+    """API sometimes returns Owners: null instead of an empty list."""
+    asset = {"Owners": None}
+    assert _asset_owned_by(asset, "Exxon Mobil Corp") is False
+
+
 def test_parse_asset_emissions_with_owner_filter():
     """Only Exxon-owned assets should be summed when owner is specified."""
     result = parse_asset_emissions("XOM", SAMPLE_ASSETS, 2023, owner="Exxon Mobil Corp")
