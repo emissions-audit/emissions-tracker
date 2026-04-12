@@ -121,6 +121,25 @@ def seeded_session(db_session):
     ])
     db_session._session.commit()
 
+    # Exxon cross-validation — larger spread for sort/filter tests
+    cv_exxon_id = uuid.UUID("00000000-0000-0000-0000-000000000021")
+    db_session.add_all([
+        CrossValidation(
+            id=cv_exxon_id, company_id=exxon_id, year=2023, scope="1",
+            source_count=2, min_value=112_000_000, max_value=168_000_000,
+            spread_pct=50.0, flag="red",
+        ),
+        SourceEntry(
+            id=uuid.uuid4(), cross_validation_id=cv_exxon_id,
+            source_type="regulatory", value_mt_co2e=112_000_000, filing_id=filing2_id,
+        ),
+        SourceEntry(
+            id=uuid.uuid4(), cross_validation_id=cv_exxon_id,
+            source_type="satellite", value_mt_co2e=168_000_000,
+        ),
+    ])
+    db_session._session.commit()
+
     # Pledge fixtures (Task 13)
     db_session.add_all([
         Pledge(id=uuid.uuid4(), company_id=shell_id, pledge_type="net_zero",

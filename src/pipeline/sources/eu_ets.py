@@ -139,8 +139,13 @@ class EuEtsSource(BaseSource):
         3. Extract ``VERIFIED_EMISSIONS_{year}`` columns for requested years.
         4. Map installations to tickers via :func:`resolve_ticker`.
         5. Filter to requested tickers (if non-empty).
+
+        Returns an empty list if the download fails (404, timeout, etc.).
         """
-        records = await self._download_and_parse(years)
+        try:
+            records = await self._download_and_parse(years)
+        except (httpx.HTTPError, Exception):
+            return []
         results = parse_eu_ets_data(records, years)
 
         if tickers:

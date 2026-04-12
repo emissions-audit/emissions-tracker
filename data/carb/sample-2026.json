@@ -1,0 +1,26 @@
+[
+  {
+    "entity_name": "Chevron Corporation",
+    "reporting_year": 2026,
+    "naics_code": "211120",
+    "scope_1_mt_co2e": 55000000,
+    "scope_2_mt_co2e": 8500000,
+    "scope_3_mt_co2e": null,
+    "verification_status": "third_party_verified",
+    "verification_body": "Bureau Veritas",
+    "reporting_deadline": "2026-08-01",
+    "filing_url": "https://ww2.arb.ca.gov/sb253/filings/chevron-2026"
+  },
+  {
+    "entity_name": "ExxonMobil Corporation",
+    "reporting_year": 2026,
+    "naics_code": "211120",
+    "scope_1_mt_co2e": 112000000,
+    "scope_2_mt_co2e": 14000000,
+    "scope_3_mt_co2e": 540000000,
+    "verification_status": "third_party_verified",
+    "verification_body": "DNV",
+    "reporting_deadline": "2026-08-01",
+    "filing_url": "https://ww2.arb.ca.gov/sb253/filings/exxonmobil-2026"
+  }
+]

@@ -8,17 +8,30 @@ CLIMATE_TRACE_API = "https://api.climatetrace.org/v6/assets"
 # These must match the Owners[].CompanyName field in the v6 API response.
 # Companies not in Climate TRACE's oil-and-gas-production dataset are omitted.
 TICKER_TO_OWNER = {
+    # Integrated majors
     "XOM": "Exxon Mobil Corp",
     "CVX": "Chevron Corp",
-    "COP": "ConocoPhillips Corp",
     "SHEL": "Shell PLC",
     "BP": "BP PLC",
     "TTE": "TotalEnergies SE",
+    "COP": "ConocoPhillips Corp",
     "ENI": "Eni SpA",
     "EQNR": "Equinor ASA",
+    # E&P
     "OXY": "Occidental Petroleum Corp",
-    "MPC": "Marathon Petroleum Corp",
+    "DVN": "Devon Energy Corp",
+    "HES": "Hess Corp",
     "MRO": "Marathon Oil Corp",
+    "EOG": "EOG Resources Inc",
+    "FANG": "Diamondback Energy Inc",
+    # Refining
+    "MPC": "Marathon Petroleum Corp",
+    "PSX": "Phillips 66",
+    "VLO": "Valero Energy Corp",
+    # Oilfield services (may not be in Climate TRACE oil-and-gas dataset)
+    "SLB": "Schlumberger Ltd",
+    "BKR": "Baker Hughes Co",
+    "HAL": "Halliburton Co",
 }
 
 

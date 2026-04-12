@@ -99,5 +99,19 @@ class CarbSource(BaseSource):
         return parse_carb_response(data, years)
 
     async def _fetch_from_api(self, years: list[int]) -> list[RawEmission]:
-        # CARB SB 253 API is not live yet — return empty for now
-        return []
+        """Attempt to fetch from live CARB SB253 API.
+
+        The API may not be live until mid-2026 (first reporting deadline
+        is 2026-07-01). If the request fails, return empty gracefully.
+        """
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.get(
+                    CARB_API_URL,
+                    params={"years": ",".join(str(y) for y in years)},
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return parse_carb_response(data, years)
+        except (httpx.HTTPError, Exception):
+            return []

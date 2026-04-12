@@ -40,6 +40,15 @@ def test_all_seed_companies_covered():
         assert ticker in resolved, f"Seed ticker {ticker} not covered"
 
 
+def test_eu_subsidiary_variants():
+    """EU ETS installation names with subsidiary suffixes should resolve."""
+    assert resolve_ticker("Shell Deutschland") == "SHEL"
+    assert resolve_ticker("BP Europa") == "BP"
+    assert resolve_ticker("TotalEnergies Raffinage") == "TTE"
+    assert resolve_ticker("Eni Deutschland") == "ENI"
+    assert resolve_ticker("ExxonMobil Production Deutschland") == "XOM"
+
+
 def test_get_all_tickers():
     tickers = get_all_tickers()
     assert isinstance(tickers, list)

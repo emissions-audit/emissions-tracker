@@ -135,3 +135,22 @@ async def test_carb_source_fetch_empty_without_data_path():
     source = CarbSource()
     results = await source.fetch_emissions(tickers=[], years=[2026])
     assert results == []
+
+
+@pytest.mark.asyncio
+async def test_carb_source_fetch_api_graceful_failure(monkeypatch):
+    """If CARB API is not live, fetch_emissions should return empty list."""
+    import httpx
+    from src.pipeline.sources.carb import CarbSource
+
+    async def mock_get(self, url, **kwargs):
+        raise httpx.HTTPStatusError(
+            "Not Found",
+            request=httpx.Request("GET", url),
+            response=httpx.Response(404),
+        )
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", mock_get)
+    source = CarbSource()
+    results = await source.fetch_emissions(tickers=[], years=[2026])
+    assert results == []

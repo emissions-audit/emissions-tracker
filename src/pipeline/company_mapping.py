@@ -67,6 +67,19 @@ FACILITY_OWNER_TO_TICKER: dict[str, str] = {
     "Baker Hughes Company": "BKR",
     "Halliburton": "HAL",
     "Halliburton Company": "HAL",
+    # EU subsidiaries (for EU ETS installation matching)
+    "Shell Deutschland": "SHEL",
+    "Shell Deutschland Oil": "SHEL",
+    "Shell Deutschland Oil GmbH": "SHEL",
+    "BP Europa": "BP",
+    "BP Europa SE": "BP",
+    "BP Gelsenkirchen": "BP",
+    "TotalEnergies Raffinage": "TTE",
+    "TotalEnergies Raffinage France": "TTE",
+    "Eni Deutschland": "ENI",
+    "ExxonMobil Production Deutschland": "XOM",
+    "ExxonMobil Central Europe Holding": "XOM",
+    "Equinor Refining Denmark": "EQNR",
 }
 
 # ---------------------------------------------------------------------------

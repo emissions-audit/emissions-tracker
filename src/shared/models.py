@@ -127,6 +127,7 @@ class SourceEntry(Base):
     value_mt_co2e: Mapped[float] = mapped_column(Numeric(precision=20, scale=2))
     filing_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("filings.id"))
 
+    filing: Mapped["Filing | None"] = relationship()
     cross_validation: Mapped["CrossValidation"] = relationship(back_populates="entries")
 
 

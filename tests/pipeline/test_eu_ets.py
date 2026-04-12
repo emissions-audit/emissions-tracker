@@ -1,5 +1,7 @@
 import pytest
 
+import httpx
+
 from src.pipeline.sources.eu_ets import parse_eu_ets_data
 
 
@@ -131,3 +133,29 @@ def test_parse_eu_ets_metadata():
         assert r.unit == "t_co2e"
         assert r.verified is True
         assert r.parser_used == "excel"
+
+
+def test_eu_ets_download_url_construction():
+    """The download URL should include the requested year."""
+    from src.pipeline.sources.eu_ets import EU_ETS_DOWNLOAD_URL
+    url = EU_ETS_DOWNLOAD_URL.format(year=2023)
+    assert "2023" in url
+    assert "climate.ec.europa.eu" in url
+
+
+@pytest.mark.asyncio
+async def test_eu_ets_source_handles_download_error(monkeypatch):
+    """If the Excel download fails, fetch_emissions should return empty list."""
+    from src.pipeline.sources.eu_ets import EuEtsSource
+
+    async def mock_get(self, url, **kwargs):
+        raise httpx.HTTPStatusError(
+            "Not Found",
+            request=httpx.Request("GET", url),
+            response=httpx.Response(404),
+        )
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", mock_get)
+    source = EuEtsSource()
+    results = await source.fetch_emissions(tickers=["SHEL"], years=[2023])
+    assert results == []

@@ -77,6 +77,7 @@ class SourceEntryResponse(BaseModel):
     source_type: str
     value_mt_co2e: float
     filing_id: uuid.UUID | None = None
+    filing_url: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -96,16 +97,25 @@ class CrossValidationResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DiscrepancySourceDetail(BaseModel):
+    source_type: str
+    value_mt_co2e: float
+    filing_url: str | None = None
+
+
 class DiscrepancyResponse(BaseModel):
     company_id: uuid.UUID
     company_name: str
+    ticker: str | None = None
     year: int
     scope: str
     spread_pct: float
+    delta_mt_co2e: float = 0
     flag: str
     source_count: int
     min_value: float
     max_value: float
+    sources: list[DiscrepancySourceDetail] = []
 
     model_config = {"from_attributes": True}
 

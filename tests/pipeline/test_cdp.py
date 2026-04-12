@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from src.pipeline.sources.cdp import CdpSource, parse_cdp_response
@@ -42,3 +44,29 @@ def test_parse_cdp_response_missing_scopes():
     assert len(results) == 1
     assert results[0].scope == "Scope 1"
     assert results[0].verified is False
+
+
+@pytest.mark.asyncio
+async def test_cdp_source_fetch_from_file(tmp_path):
+    data_file = tmp_path / "cdp_data.json"
+    data_file.write_text(json.dumps(SAMPLE_CDP_DATA))
+
+    source = CdpSource(data_path=str(data_file))
+    results = await source.fetch_emissions(tickers=["SHEL"], years=[2023])
+
+    assert len(results) == 3  # SHEL scope 1, 2, 3
+    assert all(r.company_ticker == "SHEL" for r in results)
+
+
+@pytest.mark.asyncio
+async def test_cdp_source_empty_without_data_path():
+    source = CdpSource()
+    results = await source.fetch_emissions(tickers=[], years=[2023])
+    assert results == []
+
+
+@pytest.mark.asyncio
+async def test_cdp_source_missing_file():
+    source = CdpSource(data_path="/nonexistent/path.json")
+    results = await source.fetch_emissions(tickers=[], years=[2023])
+    assert results == []

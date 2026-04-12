@@ -8,10 +8,12 @@ from src.pipeline.sources.climate_trace import (
     _asset_owned_by,
 )
 
-# Companies confirmed in Climate TRACE's oil-and-gas-production dataset.
+# All 20 seed companies — must match TICKER_TO_OWNER keys.
 EXPECTED_TICKERS = [
-    "XOM", "CVX", "COP", "SHEL", "BP",
-    "TTE", "ENI", "EQNR", "OXY", "MPC", "MRO",
+    "XOM", "CVX", "SHEL", "BP", "TTE", "COP", "ENI", "EQNR",
+    "OXY", "DVN", "HES", "MRO", "EOG", "FANG",
+    "MPC", "PSX", "VLO",
+    "SLB", "BKR", "HAL",
 ]
 
 # v6 API response shape — assets with nested EmissionsSummary and Owners.
@@ -96,7 +98,17 @@ def test_ticker_map_has_expected_companies():
     """All confirmed Climate TRACE tickers must be present."""
     missing = [t for t in EXPECTED_TICKERS if t not in TICKER_TO_OWNER]
     assert missing == [], f"Missing tickers: {missing}"
-    assert len(TICKER_TO_OWNER) == 11
+
+
+def test_ticker_map_covers_all_seed_companies():
+    """All 20 seed companies from cli.py should have a TICKER_TO_OWNER entry."""
+    SEED_TICKERS = [
+        "XOM", "CVX", "SHEL", "BP", "TTE", "COP", "ENI", "EQNR",
+        "OXY", "MPC", "PSX", "VLO", "DVN", "HES", "MRO", "EOG",
+        "SLB", "BKR", "HAL", "FANG",
+    ]
+    missing = [t for t in SEED_TICKERS if t not in TICKER_TO_OWNER]
+    assert missing == [], f"Missing tickers in TICKER_TO_OWNER: {missing}"
 
 
 @pytest.mark.asyncio

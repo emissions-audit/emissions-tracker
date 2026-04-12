@@ -1,14 +1,61 @@
 # Emissions Tracker
 
-Open-source corporate emissions transparency tracker. Aggregates public emissions disclosures into a free, searchable database with a REST API.
+> *Cross-validated US corporate emissions — independent, free, after the EPA's exit*
 
-## Why
+An open API that aggregates corporate emissions data across EPA GHGRP, Climate TRACE, EU ETS, CDP, and SEC disclosures, then cross-validates self-reported figures against independent satellite and regulatory sources. With the EPA terminating GHGRP reporting, this fills the vacuum with free, verifiable emissions data so journalists and researchers can hold companies accountable.
 
-~100 companies produce ~71% of global emissions. The data exists but is scattered across paywalled databases costing $25K-$200K/year. This project makes it free, open, and developer-friendly.
+```bash
+curl https://emissions-tracker-production.up.railway.app/v1/emissions?ticker=XOM
+```
 
-## Key Feature: Cross-Validation
+See it live: [`https://emissions-tracker-production.up.railway.app`](https://emissions-tracker-production.up.railway.app)
 
-We compare emissions data across multiple independent sources (SEC filings, satellite measurements, voluntary disclosures) and flag discrepancies. When Shell says X but satellites say Y, you'll see it.
+## Try it
+
+```bash
+# Coverage — which companies and years are tracked
+curl https://emissions-tracker-production.up.railway.app/v1/stats
+
+# Pull every source for a single company
+curl "https://emissions-tracker-production.up.railway.app/v1/emissions?ticker=XOM&year=2023"
+
+# Interactive HTML quickstart (no tools required)
+open https://emissions-tracker-production.up.railway.app/quickstart
+
+# Top emissions discrepancies — where reports disagree with measurements
+curl "https://emissions-tracker-production.up.railway.app/v1/discrepancies/top?limit=5"
+```
+
+## See the cross-validation
+
+Exxon reports **124.8 Mt CO2e** to EPA GHGRP; Climate TRACE satellites measure **168.4 Mt CO2e** — a **35% gap**.
+
+<!-- TODO: replace code block with PNG screenshot once a human runs the live query -->
+```text
+XOM — 2023 Scope 1 emissions
+EPA GHGRP (self-reported, US facilities)   124.8 Mt CO2e
+Climate TRACE v6 (satellite, global owned) 168.4 Mt CO2e
+Delta                                      +43.6 Mt  (+35.0%)
+```
+
+Full write-up: [`examples/discrepancy-exxon.md`](examples/discrepancy-exxon.md)
+
+## Discrepancy Explorer
+
+The [Discrepancy Explorer](https://emissions-tracker-production.up.railway.app/discrepancies) surfaces the biggest gaps between what companies report and what independent sources measure — ranked by severity.
+
+```bash
+# Browse the top discrepancies (HTML)
+open https://emissions-tracker-production.up.railway.app/discrepancies
+
+# Get discrepancies as JSON (filterable, sortable)
+curl "https://emissions-tracker-production.up.railway.app/v1/discrepancies?sort=delta&limit=10"
+
+# Download as CSV (for spreadsheets and data journalism)
+curl -O https://emissions-tracker-production.up.railway.app/v1/discrepancies.csv
+```
+
+Filter by `ticker`, `company`, `year`, `sector`, `min_delta`. Sort by `spread_pct` (default), `delta`, or `ticker`.
 
 ## Quick Start
 
@@ -53,10 +100,14 @@ Full API docs: http://localhost:8000/docs
 
 ## Data Sources
 
-1. **SEC EDGAR** (XBRL) -- US regulatory filings
-2. **Climate TRACE** -- Satellite-derived emissions
-3. **CDP** -- Voluntary corporate disclosures
-4. **Sustainability Reports** -- LLM-extracted from PDFs
+| # | Source | Type | Coverage | Status |
+|---|---|---|---|---|
+| 1 | **SEC EDGAR** (XBRL) | Regulatory | US public company filings | Active |
+| 2 | **Climate TRACE** v6 | Satellite | 350M+ global assets, 20 tracked companies | Active |
+| 3 | **EPA GHGRP** | Regulatory | ~8K US facilities (Scope 1) | Active |
+| 4 | **EU ETS** | Regulatory | ~10K EU/EEA installations (Scope 1) | Active |
+| 5 | **CDP** | Voluntary | Corporate climate disclosures | Active (sample data) |
+| 6 | **CARB SB253** | Regulatory | California corporate emissions | Pending (reporting starts 2026-07) |
 
 ## Tech Stack
 
