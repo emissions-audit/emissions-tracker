@@ -2,10 +2,21 @@ from src.pipeline.company_mapping import resolve_ticker, get_all_tickers
 
 
 ALL_SEED_TICKERS = [
+    # Oil & Gas
     "XOM", "CVX", "SHEL", "BP", "TTE", "COP", "ENI", "EQNR",
-    "OXY", "DVN", "HES", "MRO", "EOG", "FANG",
+    "OXY", "DVN", "HES", "MRO", "EOG", "FANG", "PXD", "CTRA",
     "MPC", "PSX", "VLO",
     "SLB", "BKR", "HAL",
+    # Utilities
+    "DUK", "SO", "NEE", "AEP", "D", "XEL", "WEC", "EIX", "ETR", "AES", "EVRG", "NRG", "VST",
+    # Materials
+    "VMC", "MLM", "NUE", "STLD", "CLF", "X",
+    # Chemicals
+    "DOW", "LYB", "CE", "CF", "MOS",
+    # Mining
+    "FCX", "NEM", "AA",
+    # Airlines
+    "DAL", "UAL", "AAL",
 ]
 
 
@@ -52,5 +63,5 @@ def test_eu_subsidiary_variants():
 def test_get_all_tickers():
     tickers = get_all_tickers()
     assert isinstance(tickers, list)
-    assert len(tickers) == 20
+    assert len(tickers) == len(ALL_SEED_TICKERS)
     assert set(tickers) == set(ALL_SEED_TICKERS)

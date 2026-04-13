@@ -2,7 +2,7 @@
 
 > *Cross-validated US corporate emissions — independent, free, after the EPA's exit*
 
-An open API that aggregates corporate emissions data across EPA GHGRP, Climate TRACE, EU ETS, CDP, and SEC disclosures, then cross-validates self-reported figures against independent satellite and regulatory sources. With the EPA terminating GHGRP reporting, this fills the vacuum with free, verifiable emissions data so journalists and researchers can hold companies accountable.
+An open API that aggregates corporate emissions data across EPA GHGRP, Climate TRACE, EU ETS, CDP, and SEC disclosures, then cross-validates self-reported figures against independent satellite and regulatory sources. Tracks 50+ companies across energy, utilities, materials, chemicals, mining, and transportation — covering the largest US corporate emitters. With the EPA terminating GHGRP reporting, this fills the vacuum with free, verifiable emissions data so journalists and researchers can hold companies accountable.
 
 ```bash
 curl https://emissions-tracker-production.up.railway.app/v1/emissions?ticker=XOM
@@ -95,6 +95,11 @@ API docs at http://localhost:8000/docs
 | `GET /v1/meta/sectors` | Available sectors |
 | `GET /v1/meta/methodology` | Data methodology docs |
 | `GET /v1/export/full` | Bulk export (Pro tier) |
+| `GET /v1/project-stats` | GitHub stars, forks, contributors |
+| `GET /v1/analytics/summary` | API usage analytics |
+| `GET /landing` | Landing page with live stats |
+| `GET /pricing` | Pricing tiers (Free/Pro/Enterprise) |
+| `GET /enterprise` | Enterprise inquiry form |
 
 Full API docs: http://localhost:8000/docs
 
@@ -103,7 +108,7 @@ Full API docs: http://localhost:8000/docs
 | # | Source | Type | Coverage | Status |
 |---|---|---|---|---|
 | 1 | **SEC EDGAR** (XBRL) | Regulatory | US public company filings | Active |
-| 2 | **Climate TRACE** v6 | Satellite | 350M+ global assets, 20 tracked companies | Active |
+| 2 | **Climate TRACE** v6 | Satellite | 350M+ global assets, 50+ tracked companies | Active |
 | 3 | **EPA GHGRP** | Regulatory | ~8K US facilities (Scope 1) | Active |
 | 4 | **EU ETS** | Regulatory | ~10K EU/EEA installations (Scope 1) | Active |
 | 5 | **CDP** | Voluntary | Corporate climate disclosures | Active (sample data) |

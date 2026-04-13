@@ -8,7 +8,7 @@ CLIMATE_TRACE_API = "https://api.climatetrace.org/v6/assets"
 # These must match the Owners[].CompanyName field in the v6 API response.
 # Companies not in Climate TRACE's oil-and-gas-production dataset are omitted.
 TICKER_TO_OWNER = {
-    # Integrated majors
+    # Oil & Gas: Integrated majors
     "XOM": "Exxon Mobil Corp",
     "CVX": "Chevron Corp",
     "SHEL": "Shell PLC",
@@ -17,21 +17,52 @@ TICKER_TO_OWNER = {
     "COP": "ConocoPhillips Corp",
     "ENI": "Eni SpA",
     "EQNR": "Equinor ASA",
-    # E&P
+    # Oil & Gas: E&P
     "OXY": "Occidental Petroleum Corp",
     "DVN": "Devon Energy Corp",
     "HES": "Hess Corp",
     "MRO": "Marathon Oil Corp",
     "EOG": "EOG Resources Inc",
     "FANG": "Diamondback Energy Inc",
-    # Refining
+    "PXD": "Pioneer Natural Resources Co",
+    "CTRA": "Coterra Energy Inc",
+    # Oil & Gas: Refining
     "MPC": "Marathon Petroleum Corp",
     "PSX": "Phillips 66",
     "VLO": "Valero Energy Corp",
-    # Oilfield services (may not be in Climate TRACE oil-and-gas dataset)
+    # Oilfield services
     "SLB": "Schlumberger Ltd",
     "BKR": "Baker Hughes Co",
     "HAL": "Halliburton Co",
+    # Utilities / Power generation
+    "DUK": "Duke Energy Corp",
+    "SO": "Southern Co",
+    "NEE": "NextEra Energy Inc",
+    "AEP": "American Electric Power Co Inc",
+    "D": "Dominion Energy Inc",
+    "XEL": "Xcel Energy Inc",
+    "WEC": "WEC Energy Group Inc",
+    "EIX": "Edison International",
+    "ETR": "Entergy Corp",
+    "AES": "AES Corp",
+    "EVRG": "Evergy Inc",
+    "NRG": "NRG Energy Inc",
+    "VST": "Vistra Corp",
+    # Materials: Steel
+    "NUE": "Nucor Corp",
+    "CLF": "Cleveland-Cliffs Inc",
+    "X": "United States Steel Corp",
+    # Chemicals
+    "DOW": "Dow Inc",
+    "LYB": "LyondellBasell Industries NV",
+    "CF": "CF Industries Holdings Inc",
+    # Mining
+    "FCX": "Freeport-McMoRan Inc",
+    "AA": "Alcoa Corp",
+    # Airlines
+    "DAL": "Delta Air Lines Inc",
+    "UAL": "United Airlines Holdings Inc",
+    "AAL": "American Airlines Group Inc",
 }
 
 

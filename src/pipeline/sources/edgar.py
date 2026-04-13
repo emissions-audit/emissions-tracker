@@ -6,6 +6,7 @@ EDGAR_COMPANY_FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.j
 EDGAR_HEADERS = {"User-Agent": "EmissionsTracker research@emissionstracker.org"}
 
 TICKER_TO_CIK = {
+    # Oil & Gas
     "XOM": "0000034088",
     "CVX": "0000093410",
     "COP": "0001163165",
@@ -21,6 +22,43 @@ TICKER_TO_CIK = {
     "HAL": "0000045012",
     "FANG": "0001539838",
     "MRO": "0000101778",
+    "PXD": "0001038357",
+    "CTRA": "0000858470",
+    # Utilities
+    "DUK": "0001326160",
+    "SO": "0000092122",
+    "NEE": "0000753308",
+    "AEP": "0000004904",
+    "D": "0000715957",
+    "XEL": "0000072903",
+    "WEC": "0000783325",
+    "EIX": "0000827052",
+    "ETR": "0000065580",
+    "AES": "0000874761",
+    "EVRG": "0001711269",
+    "NRG": "0001013871",
+    "VST": "0001692819",
+    # Materials: Cement & Steel
+    "VMC": "0001396009",
+    "MLM": "0000916076",
+    "NUE": "0000073309",
+    "STLD": "0001022671",
+    "CLF": "0000764065",
+    "X": "0000100885",
+    # Chemicals
+    "DOW": "0001751788",
+    "LYB": "0001489393",
+    "CE": "0001306830",
+    "CF": "0001324404",
+    "MOS": "0001285785",
+    # Mining
+    "FCX": "0000831259",
+    "NEM": "0001164727",
+    "AA": "0001675149",
+    # Airlines
+    "DAL": "0000027904",
+    "UAL": "0000100517",
+    "AAL": "0000006201",
 }
 
 GHG_CONCEPTS = {

@@ -202,6 +202,7 @@ def seed():
     from src.pipeline.sources.climate_trace import TICKER_TO_OWNER
 
     ENERGY_COMPANIES = {
+        # --- Oil & Gas: Integrated majors ---
         "XOM": ("ExxonMobil", "oil_gas_integrated", "US", "US30231G1022"),
         "CVX": ("Chevron", "oil_gas_integrated", "US", "US1667641005"),
         "SHEL": ("Shell plc", "oil_gas_integrated", "GB", "GB00BP6MXD84"),
@@ -210,18 +211,75 @@ def seed():
         "COP": ("ConocoPhillips", "oil_gas_exploration", "US", "US20825C1045"),
         "ENI": ("Eni S.p.A.", "oil_gas_integrated", "IT", "IT0003132476"),
         "EQNR": ("Equinor ASA", "oil_gas_integrated", "NO", "NO0010096985"),
+        # --- Oil & Gas: E&P ---
         "OXY": ("Occidental Petroleum", "oil_gas_exploration", "US", "US6745991058"),
-        "MPC": ("Marathon Petroleum", "oil_gas_refining", "US", "US56585A1025"),
-        "PSX": ("Phillips 66", "oil_gas_refining", "US", "US7185461040"),
-        "VLO": ("Valero Energy", "oil_gas_refining", "US", "US91913Y1001"),
         "DVN": ("Devon Energy", "oil_gas_exploration", "US", "US25179M1036"),
         "HES": ("Hess Corporation", "oil_gas_exploration", "US", "US42809H1077"),
         "MRO": ("Marathon Oil", "oil_gas_exploration", "US", "US5658491064"),
         "EOG": ("EOG Resources", "oil_gas_exploration", "US", "US26875P1012"),
+        "FANG": ("Diamondback Energy", "oil_gas_exploration", "US", "US25278X1090"),
+        "PXD": ("Pioneer Natural Resources", "oil_gas_exploration", "US", "US7237871071"),
+        "CTRA": ("Coterra Energy", "oil_gas_exploration", "US", "US1270971039"),
+        # --- Oil & Gas: Refining ---
+        "MPC": ("Marathon Petroleum", "oil_gas_refining", "US", "US56585A1025"),
+        "PSX": ("Phillips 66", "oil_gas_refining", "US", "US7185461040"),
+        "VLO": ("Valero Energy", "oil_gas_refining", "US", "US91913Y1001"),
+        # --- Oilfield services ---
         "SLB": ("SLB (Schlumberger)", "oilfield_services", "US", "AN8068571086"),
         "BKR": ("Baker Hughes", "oilfield_services", "US", "US05722G1004"),
         "HAL": ("Halliburton", "oilfield_services", "US", "US4062161017"),
-        "FANG": ("Diamondback Energy", "oil_gas_exploration", "US", "US25278X1090"),
+        # --- Utilities / Power generation ---
+        "DUK": ("Duke Energy", "electric_utilities", "US", "US26441C2044"),
+        "SO": ("Southern Company", "electric_utilities", "US", "US8425871071"),
+        "NEE": ("NextEra Energy", "electric_utilities", "US", "US65339F1012"),
+        "AEP": ("American Electric Power", "electric_utilities", "US", "US0255371017"),
+        "D": ("Dominion Energy", "electric_utilities", "US", "US25746U1097"),
+        "XEL": ("Xcel Energy", "electric_utilities", "US", "US98389B1008"),
+        "WEC": ("WEC Energy Group", "electric_utilities", "US", "US92939U1060"),
+        "EIX": ("Edison International", "electric_utilities", "US", "US2810201077"),
+        "ETR": ("Entergy", "electric_utilities", "US", "US29364G1031"),
+        "AES": ("AES Corporation", "electric_utilities", "US", "US00130H1059"),
+        "EVRG": ("Evergy", "electric_utilities", "US", "US30034W1062"),
+        "NRG": ("NRG Energy", "power_generation", "US", "US6293775085"),
+        "VST": ("Vistra Corp", "power_generation", "US", "US92840M1027"),
+        # --- Materials: Cement & Steel ---
+        "VMC": ("Vulcan Materials", "construction_materials", "US", "US9291601097"),
+        "MLM": ("Martin Marietta Materials", "construction_materials", "US", "US5732841060"),
+        "NUE": ("Nucor Corporation", "steel", "US", "US6703461052"),
+        "STLD": ("Steel Dynamics", "steel", "US", "US8581191009"),
+        "CLF": ("Cleveland-Cliffs", "steel", "US", "US1858991011"),
+        "X": ("United States Steel", "steel", "US", "US9129091081"),
+        # --- Chemicals ---
+        "DOW": ("Dow Inc.", "chemicals", "US", "US2605571031"),
+        "LYB": ("LyondellBasell", "chemicals", "US", "NL0009434992"),
+        "CE": ("Celanese Corporation", "chemicals", "US", "US1508701034"),
+        "CF": ("CF Industries", "chemicals_fertilizer", "US", "US1252691001"),
+        "MOS": ("Mosaic Company", "chemicals_fertilizer", "US", "US61945C1036"),
+        # --- Mining ---
+        "FCX": ("Freeport-McMoRan", "mining_copper", "US", "US35671D8570"),
+        "NEM": ("Newmont Corporation", "mining_gold", "US", "US6516391066"),
+        "AA": ("Alcoa Corporation", "mining_aluminum", "US", "US0138721065"),
+        # --- Airlines (large scope 1 emitters) ---
+        "DAL": ("Delta Air Lines", "airlines", "US", "US2473617023"),
+        "UAL": ("United Airlines Holdings", "airlines", "US", "US9100471096"),
+        "AAL": ("American Airlines Group", "airlines", "US", "US02376R1023"),
+    }
+
+    SUBSECTOR_TO_SECTOR = {
+        "oil_gas_integrated": "energy",
+        "oil_gas_exploration": "energy",
+        "oil_gas_refining": "energy",
+        "oilfield_services": "energy",
+        "electric_utilities": "utilities",
+        "power_generation": "utilities",
+        "construction_materials": "materials",
+        "steel": "materials",
+        "chemicals": "materials",
+        "chemicals_fertilizer": "materials",
+        "mining_copper": "mining",
+        "mining_gold": "mining",
+        "mining_aluminum": "mining",
+        "airlines": "transportation",
     }
 
     session = _get_sync_session()
@@ -230,8 +288,9 @@ def seed():
         existing = session.query(Company).filter(Company.ticker == ticker).first()
         if existing:
             continue
+        sector = SUBSECTOR_TO_SECTOR.get(subsector, "energy")
         session.add(Company(
-            id=uuid.uuid4(), name=name, ticker=ticker, sector="energy",
+            id=uuid.uuid4(), name=name, ticker=ticker, sector=sector,
             subsector=subsector, country=country, isin=isin,
         ))
         count += 1
