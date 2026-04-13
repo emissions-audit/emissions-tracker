@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter
-from sqlalchemy import select, text
+from sqlalchemy import select, func, text, cast, Date
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.shared.models import CoverageSnapshot
+from src.shared.models import ApiCallLog, ApiKey, CoverageSnapshot
 
 
 # Captured at import time. Good-enough uptime signal for launch readiness.
@@ -59,11 +59,49 @@ def build_router(get_db) -> APIRouter:
                 "total_emissions_rows": snapshot.total_emissions,
             }
 
+        # API key analytics
+        api_keys_payload: dict | None
+        try:
+            total_keys = (await db.execute(
+                select(func.count(ApiKey.id))
+            )).scalar() or 0
+
+            daily_active = (await db.execute(
+                select(func.count(func.distinct(ApiCallLog.api_key_hash)))
+                .where(
+                    ApiCallLog.created_at >= now - timedelta(hours=24),
+                    ApiCallLog.api_key_hash.isnot(None),
+                )
+            )).scalar() or 0
+
+            thirty_days_ago = now - timedelta(days=30)
+            reg_rows = (await db.execute(
+                select(
+                    cast(ApiKey.created_at, Date).label("day"),
+                    func.count(ApiKey.id).label("count"),
+                )
+                .where(ApiKey.created_at >= thirty_days_ago)
+                .group_by(cast(ApiKey.created_at, Date))
+                .order_by(cast(ApiKey.created_at, Date))
+            )).all()
+
+            api_keys_payload = {
+                "total": total_keys,
+                "daily_active": daily_active,
+                "registrations_by_day": [
+                    {"date": str(day), "count": count}
+                    for day, count in reg_rows
+                ],
+            }
+        except Exception:
+            api_keys_payload = None
+
         return {
             "uptime_seconds": uptime,
             "started_at": STARTED_AT.isoformat().replace("+00:00", "Z"),
             "version": _VERSION,
             "coverage": coverage_payload,
+            "api_keys": api_keys_payload,
             "database": database_status,
         }
 
