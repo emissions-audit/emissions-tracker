@@ -79,6 +79,11 @@ These are the biggest gaps.</p>
   <a href="/quickstart">API Quickstart</a>
 </div>
 
+<div style="margin-top: 1.5rem; padding: 0.75rem 1rem; background: #f0f7ff; border: 1px solid #c8e1ff; border-radius: 6px; font-size: 0.95rem;">
+  Need the full dataset? <a href="/enterprise">Enterprise access</a> includes bulk export, unlimited API calls, and SLA.
+  <a href="/pricing">Compare plans</a>
+</div>
+
 <h2>Top Discrepancies</h2>
 <table>
 <thead>

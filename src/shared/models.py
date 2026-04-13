@@ -183,3 +183,14 @@ class CoverageSnapshot(Base):
 
     alerts: Mapped[list] = mapped_column(_JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EnterpriseInquiry(Base):
+    __tablename__ = "enterprise_inquiries"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    company_name: Mapped[str] = mapped_column(String(255))
+    email: Mapped[str] = mapped_column(String(255))
+    use_case: Mapped[str | None] = mapped_column(String(2000))
+    estimated_volume: Mapped[str | None] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

@@ -83,6 +83,11 @@ _QUICKSTART_HTML = """<!DOCTYPE html>
 <h2>Rate limits</h2>
 <p>100 requests per minute by default. Higher limits available on request for research use.</p>
 
+<div style="margin-top: 2rem; padding: 1rem 1.25rem; background: #f0f7ff; border: 1px solid #c8e1ff; border-radius: 6px;">
+  <strong>Need higher limits?</strong> Our Pro plan includes 1K req/min, bulk export, and webhooks.
+  <a href="/pricing">See plans</a> or <a href="/enterprise">contact us for Enterprise</a>.
+</div>
+
 <footer>
   <a href="https://github.com/emissions-audit/emissions-tracker">github.com/emissions-audit/emissions-tracker</a>
 </footer>

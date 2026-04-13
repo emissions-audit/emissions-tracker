@@ -14,6 +14,8 @@ from src.api.routes import quickstart, metrics
 from src.api.routes import discrepancies_page
 from src.api.routes import project_stats
 from src.api.routes import landing
+from src.api.routes import enterprise
+from src.api.routes import pricing
 from src.api.middleware.auth import ApiKeyMiddleware
 from src.api.middleware.rate_limit import RateLimitMiddleware
 from src.api.middleware.analytics import AnalyticsMiddleware
@@ -80,6 +82,8 @@ def create_app(db_session_override: AsyncSession | None = None) -> FastAPI:
     app.include_router(discrepancies_page.build_router(get_db))
     app.include_router(project_stats.build_router(get_db))
     app.include_router(landing.build_router(get_db))
+    app.include_router(enterprise.build_router(get_db))
+    app.include_router(pricing.build_router(get_db))
 
     return app
 
