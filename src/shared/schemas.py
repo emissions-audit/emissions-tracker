@@ -218,3 +218,35 @@ class CoverageHealthResponse(BaseModel):
     alerts_warning: int
     alerts_info: int
     alerts: list[CoverageAlertResponse]
+
+
+WEBHOOK_EVENTS = [
+    "new_filing",
+    "new_emission",
+    "new_discrepancy",
+    "coverage_update",
+    "ingestion_complete",
+]
+
+
+class WebhookCreate(BaseModel):
+    url: str
+    events: list[str]
+
+    model_config = {"json_schema_extra": {"examples": [{"url": "https://example.com/webhook", "events": ["new_discrepancy", "ingestion_complete"]}]}}
+
+
+class WebhookResponse(BaseModel):
+    id: uuid.UUID
+    url: str
+    events: list[str]
+    active: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class WebhookEventPayload(BaseModel):
+    event: str
+    timestamp: datetime
+    data: dict[str, Any]

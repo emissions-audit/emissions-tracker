@@ -126,6 +126,20 @@ def ingest(
         "alerts": snapshot.alerts,
     }
     typer.echo(format_brief(brief_data))
+
+    # Fire webhook events
+    from src.shared.webhooks import fire_event_sync
+
+    fire_event_sync("ingestion_complete", {
+        "source": source,
+        "records_upserted": count,
+        "total_emissions": snapshot.total_emissions,
+    }, session)
+    if count > 0:
+        fire_event_sync("new_emission", {
+            "source": source,
+            "count": count,
+        }, session)
     session.close()
 
 
@@ -192,6 +206,24 @@ def validate():
         "alerts": snapshot.alerts,
     }
     typer.echo(format_brief(brief_data))
+
+    # Fire webhook for new discrepancies and coverage updates
+    from src.shared.webhooks import fire_event_sync
+
+    red_count = flags.get("red", 0)
+    yellow_count = flags.get("yellow", 0)
+    if red_count > 0 or yellow_count > 0:
+        fire_event_sync("new_discrepancy", {
+            "red": red_count,
+            "yellow": yellow_count,
+            "green": flags.get("green", 0),
+            "total": len(results),
+        }, session_cov)
+    fire_event_sync("coverage_update", {
+        "total_emissions": snapshot.total_emissions,
+        "cv_coverage_pct": float(snapshot.cv_coverage_pct),
+        "cv_by_flag": snapshot.cv_by_flag,
+    }, session_cov)
     session_cov.close()
 
 

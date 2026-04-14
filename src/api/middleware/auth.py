@@ -18,6 +18,7 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
         if api_key is None:
             request.state.tier = "anonymous"
             request.state.rate_limit = 100
+            request.state.api_key_id = None
         else:
             key_hash = hashlib.sha256(api_key.encode()).hexdigest()
             if not self.db_session_factory:
@@ -31,6 +32,7 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
                     return JSONResponse(status_code=401, content={"detail": "Invalid API key"})
                 request.state.tier = db_key.tier
                 request.state.rate_limit = db_key.rate_limit
+                request.state.api_key_id = db_key.id
         response = await call_next(request)
         response.headers["X-RateLimit-Limit"] = str(request.state.rate_limit)
         return response
