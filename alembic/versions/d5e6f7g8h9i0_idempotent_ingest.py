@@ -16,86 +16,49 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Collapse pre-existing duplicate filings (keep the oldest row per natural key)
-    # so the unique constraint can be applied without failure. Emissions pointing
-    # at superseded filing rows are re-pointed at the surviving filing.
+    # Stage the filing dedup plan in a temp table so every step agrees on which
+    # filing row "wins" per (company_id, year, filing_type).
     op.execute(
         """
-        WITH ranked AS (
-            SELECT id, company_id, year, filing_type,
-                   ROW_NUMBER() OVER (
-                       PARTITION BY company_id, year, filing_type
-                       ORDER BY created_at ASC, id ASC
-                   ) AS rn,
-                   FIRST_VALUE(id) OVER (
-                       PARTITION BY company_id, year, filing_type
-                       ORDER BY created_at ASC, id ASC
-                   ) AS keep_id
-            FROM filings
+        CREATE TEMP TABLE _filing_dedup ON COMMIT DROP AS
+        SELECT id,
+               FIRST_VALUE(id) OVER w AS keep_id,
+               ROW_NUMBER() OVER w AS rn
+        FROM filings
+        WINDOW w AS (
+            PARTITION BY company_id, year, filing_type
+            ORDER BY created_at ASC, id ASC
         )
-        UPDATE emissions e
-        SET source_id = r.keep_id
-        FROM ranked r
-        WHERE e.source_id = r.id AND r.rn > 1
-        """
-    )
-    op.execute(
-        """
-        WITH ranked AS (
-            SELECT id, company_id, year, filing_type,
-                   ROW_NUMBER() OVER (
-                       PARTITION BY company_id, year, filing_type
-                       ORDER BY created_at ASC, id ASC
-                   ) AS rn,
-                   FIRST_VALUE(id) OVER (
-                       PARTITION BY company_id, year, filing_type
-                       ORDER BY created_at ASC, id ASC
-                   ) AS keep_id
-            FROM filings
-        )
-        UPDATE pledges p
-        SET source_id = r.keep_id
-        FROM ranked r
-        WHERE p.source_id = r.id AND r.rn > 1
-        """
-    )
-    op.execute(
-        """
-        WITH ranked AS (
-            SELECT id, company_id, year, filing_type,
-                   ROW_NUMBER() OVER (
-                       PARTITION BY company_id, year, filing_type
-                       ORDER BY created_at ASC, id ASC
-                   ) AS rn,
-                   FIRST_VALUE(id) OVER (
-                       PARTITION BY company_id, year, filing_type
-                       ORDER BY created_at ASC, id ASC
-                   ) AS keep_id
-            FROM filings
-        )
-        UPDATE source_entries s
-        SET filing_id = r.keep_id
-        FROM ranked r
-        WHERE s.filing_id = r.id AND r.rn > 1
-        """
-    )
-    op.execute(
-        """
-        WITH ranked AS (
-            SELECT id,
-                   ROW_NUMBER() OVER (
-                       PARTITION BY company_id, year, filing_type
-                       ORDER BY created_at ASC, id ASC
-                   ) AS rn
-            FROM filings
-        )
-        DELETE FROM filings USING ranked
-        WHERE filings.id = ranked.id AND ranked.rn > 1
         """
     )
 
-    # Deduplicate emissions that collide on the existing uq_emission_source
-    # constraint (can happen if multiple fresh-UUID inserts shared a filing).
+    # Collapse duplicate emissions first. If an emission on a duplicate filing
+    # would collide with one already on the kept filing (same company/year/scope),
+    # drop the dup; otherwise re-point it at the kept filing. Then apply the
+    # existing uq_emission_source dedup to catch any remaining collisions.
+    op.execute(
+        """
+        DELETE FROM emissions e
+        USING _filing_dedup d
+        WHERE e.source_id = d.id
+          AND d.rn > 1
+          AND EXISTS (
+              SELECT 1 FROM emissions k
+              WHERE k.source_id = d.keep_id
+                AND k.company_id = e.company_id
+                AND k.year = e.year
+                AND k.scope = e.scope
+          )
+        """
+    )
+    op.execute(
+        """
+        UPDATE emissions e
+        SET source_id = d.keep_id
+        FROM _filing_dedup d
+        WHERE e.source_id = d.id AND d.rn > 1
+        """
+    )
     op.execute(
         """
         WITH ranked AS (
@@ -109,6 +72,33 @@ def upgrade() -> None:
         )
         DELETE FROM emissions USING ranked
         WHERE emissions.id = ranked.id AND ranked.rn > 1
+        """
+    )
+
+    # Re-point pledges and source_entries; no unique constraints to respect.
+    op.execute(
+        """
+        UPDATE pledges p
+        SET source_id = d.keep_id
+        FROM _filing_dedup d
+        WHERE p.source_id = d.id AND d.rn > 1
+        """
+    )
+    op.execute(
+        """
+        UPDATE source_entries s
+        SET filing_id = d.keep_id
+        FROM _filing_dedup d
+        WHERE s.filing_id = d.id AND d.rn > 1
+        """
+    )
+
+    # Delete the superseded filing rows.
+    op.execute(
+        """
+        DELETE FROM filings
+        USING _filing_dedup d
+        WHERE filings.id = d.id AND d.rn > 1
         """
     )
 
