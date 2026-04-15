@@ -35,6 +35,9 @@ class Company(Base):
 
 class Filing(Base):
     __tablename__ = "filings"
+    __table_args__ = (
+        UniqueConstraint("company_id", "year", "filing_type", name="uq_filing_natural_key"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     company_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("companies.id"))

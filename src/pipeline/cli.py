@@ -59,24 +59,17 @@ def _get_sync_session():
 
 
 def _upsert_emissions(session, raw_emissions: list[RawEmission]):
-    """Normalize and upsert emissions into the DB."""
+    """Normalize and upsert emissions into the DB.
+
+    Idempotent: re-running with the same inputs produces the same row count.
+    Filings are keyed by (company_id, year, filing_type); emissions by
+    (company_id, year, scope, source_id). Existing rows are updated in place.
+    """
     count = 0
     for raw in raw_emissions:
         company = session.query(Company).filter(Company.ticker == raw.company_ticker).first()
         if not company:
             continue
-
-        filing = Filing(
-            id=uuid.uuid4(),
-            company_id=company.id,
-            year=raw.year,
-            filing_type=raw.filing_type,
-            source_url=raw.source_url,
-            parser_used=raw.parser_used,
-            fetched_at=datetime.utcnow(),
-        )
-        session.add(filing)
-        session.flush()
 
         try:
             normalized_value = normalize_value(raw.value, raw.unit)
@@ -84,17 +77,57 @@ def _upsert_emissions(session, raw_emissions: list[RawEmission]):
         except ValueError:
             continue
 
-        emission = Emission(
-            id=uuid.uuid4(),
-            company_id=company.id,
-            year=raw.year,
-            scope=normalized_scope,
-            value_mt_co2e=normalized_value,
-            methodology=raw.methodology,
-            verified=raw.verified,
-            source_id=filing.id,
+        filing = (
+            session.query(Filing)
+            .filter(
+                Filing.company_id == company.id,
+                Filing.year == raw.year,
+                Filing.filing_type == raw.filing_type,
+            )
+            .first()
         )
-        session.merge(emission)
+        if filing is None:
+            filing = Filing(
+                id=uuid.uuid4(),
+                company_id=company.id,
+                year=raw.year,
+                filing_type=raw.filing_type,
+                source_url=raw.source_url,
+                parser_used=raw.parser_used,
+                fetched_at=datetime.utcnow(),
+            )
+            session.add(filing)
+            session.flush()
+        else:
+            filing.source_url = raw.source_url
+            filing.parser_used = raw.parser_used
+            filing.fetched_at = datetime.utcnow()
+
+        emission = (
+            session.query(Emission)
+            .filter(
+                Emission.company_id == company.id,
+                Emission.year == raw.year,
+                Emission.scope == normalized_scope,
+                Emission.source_id == filing.id,
+            )
+            .first()
+        )
+        if emission is None:
+            session.add(Emission(
+                id=uuid.uuid4(),
+                company_id=company.id,
+                year=raw.year,
+                scope=normalized_scope,
+                value_mt_co2e=normalized_value,
+                methodology=raw.methodology,
+                verified=raw.verified,
+                source_id=filing.id,
+            ))
+        else:
+            emission.value_mt_co2e = normalized_value
+            emission.methodology = raw.methodology
+            emission.verified = raw.verified
         count += 1
 
     session.commit()
