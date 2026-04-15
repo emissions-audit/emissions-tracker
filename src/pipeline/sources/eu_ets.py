@@ -15,16 +15,21 @@ import httpx
 from src.pipeline.company_mapping import resolve_ticker
 from src.pipeline.sources.base import BaseSource, RawEmission
 
-# The EUTL publishes annual compliance data as Excel workbooks.
-# The URL pattern uses the reporting year; adjust as the EC changes hosting.
-EU_ETS_DOWNLOAD_URL = (
-    "https://climate.ec.europa.eu/document/download/"
-    "compliance-data-for-installations-and-aircraft-operators_{year}"
-)
+# The EUTL publishes compliance data as annual Excel workbooks with UUID-based
+# download URLs (no computable slug pattern). Each year's workbook contains the
+# VERIFIED_EMISSIONS_{year} column for that year only, so we download each one
+# separately. Refresh this map when the EC publishes new years — the canonical
+# list lives at
+# https://climate.ec.europa.eu/eu-action/eu-emissions-trading-system-eu-ets/union-registry_en
+EU_ETS_COMPLIANCE_URLS = {
+    2020: "https://climate.ec.europa.eu/document/download/2d3e055d-ba0e-46db-b4c1-e3a9210d7ddb_en?filename=compliance_2020_code_en.xlsx",
+    2021: "https://climate.ec.europa.eu/document/download/86a31a71-dff3-4729-86d0-943685c20dc1_en?filename=compliance_2021_code_en.xlsx",
+    2022: "https://climate.ec.europa.eu/document/download/7e7268a1-fa21-4f73-b368-6e9571262e2f_en?filename=compliance_2022_code_en.xlsx",
+    2023: "https://climate.ec.europa.eu/document/download/42495a32-cb4c-4772-9a2a-d08781c8ed61_en?filename=compliance_2023_code_en.xlsx",
+    2024: "https://climate.ec.europa.eu/document/download/b80300cf-7608-405d-969e-8b016687640e_en?filename=compliance_2024_code_en.xlsx",
+}
 
-# Verified EU ETS data publishes ~year+1. Clamp target year so we never request
-# a future year that doesn't exist yet (returns 404).
-EU_ETS_LATEST_AVAILABLE_YEAR = 2023
+EU_ETS_LATEST_AVAILABLE_YEAR = max(EU_ETS_COMPLIANCE_URLS)
 
 
 def _resolve_installation_ticker(installation_name: str) -> str:
@@ -137,25 +142,36 @@ class EuEtsSource(BaseSource):
     async def fetch_emissions(
         self, tickers: list[str], years: list[int]
     ) -> list[RawEmission]:
-        """Download the EU ETS Excel file and parse installation emissions.
+        """Download per-year EU ETS Excel workbooks and parse installation emissions.
 
-        1. Fetch the .xlsx workbook from the EUTL website.
-        2. Parse with openpyxl (header at row 21, i.e. 0-indexed row 20).
-        3. Extract ``VERIFIED_EMISSIONS_{year}`` columns for requested years.
-        4. Map installations to tickers via :func:`resolve_ticker`.
-        5. Filter to requested tickers (if non-empty).
+        Each year has its own workbook (UUID-based URLs — see
+        :data:`EU_ETS_COMPLIANCE_URLS`).  For each requested year that has a
+        known URL, fetch the workbook, parse the ``VERIFIED_EMISSIONS_{year}``
+        column, and map installation names to tickers. Silently skip years we
+        don't have URLs for (e.g. current or future year where the EC has not
+        yet published).
 
-        Returns an empty list if the download fails (404, timeout, etc.).
+        Returns a merged list across all downloaded years.
         """
-        try:
-            records = await self._download_and_parse(years)
-        except httpx.HTTPError as e:
-            print(f"  eu_ets download failed: {type(e).__name__}: {e}", file=sys.stderr)
-            return []
-        except Exception as e:
-            print(f"  eu_ets parse failed: {type(e).__name__}: {e}", file=sys.stderr)
-            return []
-        results = parse_eu_ets_data(records, years)
+        results: list[RawEmission] = []
+        target_years = [y for y in years if y in EU_ETS_COMPLIANCE_URLS]
+
+        for year in target_years:
+            try:
+                records = await self._download_and_parse(year)
+            except httpx.HTTPError as e:
+                print(
+                    f"  eu_ets {year} download failed: {type(e).__name__}: {e}",
+                    file=sys.stderr,
+                )
+                continue
+            except Exception as e:
+                print(
+                    f"  eu_ets {year} parse failed: {type(e).__name__}: {e}",
+                    file=sys.stderr,
+                )
+                continue
+            results.extend(parse_eu_ets_data(records, [year]))
 
         if tickers:
             ticker_set = {t.upper() for t in tickers}
@@ -163,18 +179,11 @@ class EuEtsSource(BaseSource):
 
         return results
 
-    async def _download_and_parse(self, years: list[int]) -> list[dict]:
-        """Download the Excel workbook and convert rows to dicts."""
+    async def _download_and_parse(self, year: int) -> list[dict]:
+        """Download a single year's Excel workbook and convert rows to dicts."""
         from openpyxl import load_workbook
 
-        # Clamp the target year so we never request a future year that
-        # hasn't been published yet (EU ETS publishes verified data ~year+1).
-        target_year = (
-            min(max(years), EU_ETS_LATEST_AVAILABLE_YEAR)
-            if years
-            else EU_ETS_LATEST_AVAILABLE_YEAR
-        )
-        url = EU_ETS_DOWNLOAD_URL.format(year=target_year)
+        url = EU_ETS_COMPLIANCE_URLS[year]
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.get(url, follow_redirects=True)

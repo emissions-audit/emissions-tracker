@@ -135,12 +135,14 @@ def test_parse_eu_ets_metadata():
         assert r.parser_used == "excel"
 
 
-def test_eu_ets_download_url_construction():
-    """The download URL should include the requested year."""
-    from src.pipeline.sources.eu_ets import EU_ETS_DOWNLOAD_URL
-    url = EU_ETS_DOWNLOAD_URL.format(year=2023)
-    assert "2023" in url
-    assert "climate.ec.europa.eu" in url
+def test_eu_ets_download_url_map():
+    """Every known compliance year should map to an EC download URL."""
+    from src.pipeline.sources.eu_ets import EU_ETS_COMPLIANCE_URLS
+
+    assert 2023 in EU_ETS_COMPLIANCE_URLS
+    for year, url in EU_ETS_COMPLIANCE_URLS.items():
+        assert str(year) in url
+        assert "climate.ec.europa.eu" in url
 
 
 @pytest.mark.asyncio
