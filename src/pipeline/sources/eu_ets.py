@@ -8,6 +8,7 @@ only, as the scheme covers direct emissions from regulated installations).
 """
 
 import io
+import sys
 
 import httpx
 
@@ -20,6 +21,10 @@ EU_ETS_DOWNLOAD_URL = (
     "https://climate.ec.europa.eu/document/download/"
     "compliance-data-for-installations-and-aircraft-operators_{year}"
 )
+
+# Verified EU ETS data publishes ~year+1. Clamp target year so we never request
+# a future year that doesn't exist yet (returns 404).
+EU_ETS_LATEST_AVAILABLE_YEAR = 2023
 
 
 def _resolve_installation_ticker(installation_name: str) -> str:
@@ -144,7 +149,11 @@ class EuEtsSource(BaseSource):
         """
         try:
             records = await self._download_and_parse(years)
-        except (httpx.HTTPError, Exception):
+        except httpx.HTTPError as e:
+            print(f"  eu_ets download failed: {type(e).__name__}: {e}", file=sys.stderr)
+            return []
+        except Exception as e:
+            print(f"  eu_ets parse failed: {type(e).__name__}: {e}", file=sys.stderr)
             return []
         results = parse_eu_ets_data(records, years)
 
@@ -158,9 +167,14 @@ class EuEtsSource(BaseSource):
         """Download the Excel workbook and convert rows to dicts."""
         from openpyxl import load_workbook
 
-        # Determine the most recent year to build the download URL.
-        max_year = max(years) if years else 2024
-        url = EU_ETS_DOWNLOAD_URL.format(year=max_year)
+        # Clamp the target year so we never request a future year that
+        # hasn't been published yet (EU ETS publishes verified data ~year+1).
+        target_year = (
+            min(max(years), EU_ETS_LATEST_AVAILABLE_YEAR)
+            if years
+            else EU_ETS_LATEST_AVAILABLE_YEAR
+        )
+        url = EU_ETS_DOWNLOAD_URL.format(year=target_year)
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.get(url, follow_redirects=True)
