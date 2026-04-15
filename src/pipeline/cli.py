@@ -32,6 +32,13 @@ SOURCE_MAP = {
     "eu_ets": EuEtsSource,
 }
 
+# Sources that need seed data paths wired in. Paths are relative to repo root.
+# Omitted sources (edgar, climate_trace, epa_ghgrp, eu_ets) fetch from live APIs.
+SOURCE_KWARGS = {
+    "cdp": {"data_path": "data/cdp/sample-2023.json"},
+    "carb": {"data_path": "data/carb/sample-2026.json"},
+}
+
 FILING_TYPE_TO_SOURCE_TYPE = {
     "10k_xbrl": "regulatory",
     "climate_trace": "satellite",
@@ -98,7 +105,7 @@ def _upsert_emissions(session, raw_emissions: list[RawEmission]):
 def ingest(
     source: str = typer.Argument(help="Source: edgar, climate_trace, cdp"),
     tickers: Optional[str] = typer.Option(None, help="Comma-separated tickers"),
-    years: str = typer.Option("2022,2023,2024", help="Comma-separated years"),
+    years: str = typer.Option("2020,2021,2022,2023,2024,2025,2026", help="Comma-separated years"),
 ):
     """Fetch, parse, normalize, and load emissions data."""
     source_cls = SOURCE_MAP.get(source)
@@ -110,7 +117,9 @@ def ingest(
     year_list = [int(y.strip()) for y in years.split(",")]
 
     typer.echo(f"Ingesting from {source}...")
-    raw_emissions = asyncio.run(source_cls().fetch_emissions(ticker_list, year_list))
+    raw_emissions = asyncio.run(
+        source_cls(**SOURCE_KWARGS.get(source, {})).fetch_emissions(ticker_list, year_list)
+    )
     typer.echo(f"Fetched {len(raw_emissions)} raw records")
 
     session = _get_sync_session()
