@@ -7,10 +7,34 @@ EU ETS reports emissions at installation level in **tonnes CO2e** (Scope 1
 only, as the scheme covers direct emissions from regulated installations).
 """
 
+import asyncio
 import io
 import sys
 
 import httpx
+
+# Realistic browser UA — the EC's climate.ec.europa.eu CDN 429s bare httpx/python-
+# requests clients on first hit.
+_EU_ETS_HTTP_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/122.0.0.0 Safari/537.36"
+    ),
+    "Accept": (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,"
+        "application/octet-stream,*/*;q=0.8"
+    ),
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+# Polite pause between per-year workbook downloads. The EC rate-limits bursts
+# from a single IP (common on shared CI runners).
+_EU_ETS_INTER_REQUEST_DELAY_S = 2.0
+
+# Retry 429s a few times with a linear backoff before giving up on a year.
+_EU_ETS_MAX_RETRIES = 3
+_EU_ETS_RETRY_BACKOFF_S = 5.0
 
 from src.pipeline.company_mapping import resolve_ticker
 from src.pipeline.sources.base import BaseSource, RawEmission
@@ -156,7 +180,9 @@ class EuEtsSource(BaseSource):
         results: list[RawEmission] = []
         target_years = [y for y in years if y in EU_ETS_COMPLIANCE_URLS]
 
-        for year in target_years:
+        for i, year in enumerate(target_years):
+            if i > 0:
+                await asyncio.sleep(_EU_ETS_INTER_REQUEST_DELAY_S)
             try:
                 records = await self._download_and_parse(year)
             except httpx.HTTPError as e:
@@ -185,8 +211,15 @@ class EuEtsSource(BaseSource):
 
         url = EU_ETS_COMPLIANCE_URLS[year]
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.get(url, follow_redirects=True)
+        async with httpx.AsyncClient(
+            timeout=120.0, headers=_EU_ETS_HTTP_HEADERS
+        ) as client:
+            for attempt in range(_EU_ETS_MAX_RETRIES):
+                response = await client.get(url, follow_redirects=True)
+                if response.status_code != 429:
+                    break
+                if attempt < _EU_ETS_MAX_RETRIES - 1:
+                    await asyncio.sleep(_EU_ETS_RETRY_BACKOFF_S * (attempt + 1))
             response.raise_for_status()
 
         wb = load_workbook(filename=io.BytesIO(response.content), read_only=True)
