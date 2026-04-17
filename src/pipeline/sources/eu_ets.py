@@ -138,17 +138,18 @@ def parse_eu_ets_data(
     """Parse pre-extracted EU ETS installation dicts into RawEmission records.
 
     Each *record* represents one installation row from the EUTL Excel file
-    (already converted to a flat dict).  Emissions columns follow the naming
-    convention ``VERIFIED_EMISSIONS_{year}`` and contain tonnes CO2e or
-    ``None`` when not yet verified.
+    (already converted to a flat dict).  The EC publishes one workbook per
+    compliance year.  The emissions column is either
+    ``TOTAL_VERIFIED_EMISSIONS`` (current format) or
+    ``VERIFIED_EMISSIONS_{year}`` (legacy multi-year format).
 
     Parameters
     ----------
     records:
-        List of dicts with at least ``INSTALLATION_NAME`` and one or more
-        ``VERIFIED_EMISSIONS_{year}`` keys.
+        List of dicts from a single year's compliance workbook.
     years:
-        Which reporting years to extract.
+        Which reporting years to extract (typically a single-element list
+        matching the workbook year).
     installations_lookup:
         Optional mapping from installation ID/code to operator name,
         for resolving 2023+ numeric INSTALLATION_NAME values.
@@ -166,8 +167,11 @@ def parse_eu_ets_data(
         ticker = _resolve_installation_ticker(operator_name)
 
         for year in years:
-            col = f"VERIFIED_EMISSIONS_{year}"
-            value = row.get(col)
+            # Current EC format: single TOTAL_VERIFIED_EMISSIONS column per workbook.
+            # Legacy format: VERIFIED_EMISSIONS_{year} columns.
+            value = row.get("TOTAL_VERIFIED_EMISSIONS")
+            if value is None:
+                value = row.get(f"VERIFIED_EMISSIONS_{year}")
             if value is None:
                 continue
 

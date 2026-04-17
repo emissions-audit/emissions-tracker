@@ -135,6 +135,112 @@ def test_parse_eu_ets_metadata():
         assert r.parser_used == "excel"
 
 
+SAMPLE_EU_ETS_DATA_2023_FORMAT = [
+    {
+        "REGISTRY_CODE": "DE",
+        "INSTALLATION_NAME": "19210",
+        "INSTALLATION_IDENTIFIER": "DE-000000000001234",
+        "ACCOUNT_HOLDER_NAME": "Shell Deutschland Oil GmbH",
+        "PERMIT_IDENTIFIER": "DE1234",
+        "MAIN_ACTIVITY_TYPE_CODE": "20",
+        "VERIFIED_EMISSIONS_2023": 4200000,
+    },
+    {
+        "REGISTRY_CODE": "IT",
+        "INSTALLATION_NAME": "28456",
+        "INSTALLATION_IDENTIFIER": "IT-000000000005678",
+        "ACCOUNT_HOLDER_NAME": "Eni S.p.A.",
+        "PERMIT_IDENTIFIER": "IT5678",
+        "MAIN_ACTIVITY_TYPE_CODE": "20",
+        "VERIFIED_EMISSIONS_2023": 3100000,
+    },
+    {
+        "REGISTRY_CODE": "FR",
+        "INSTALLATION_NAME": "37890",
+        "INSTALLATION_IDENTIFIER": "FR-000000000009999",
+        "PERMIT_IDENTIFIER": "FR9999",
+        "MAIN_ACTIVITY_TYPE_CODE": "20",
+        "VERIFIED_EMISSIONS_2023": 48000,
+    },
+]
+
+
+def test_parse_eu_ets_2023_numeric_names():
+    """2023+ workbooks have numeric INSTALLATION_NAME — use ACCOUNT_HOLDER_NAME fallback."""
+    results = parse_eu_ets_data(SAMPLE_EU_ETS_DATA_2023_FORMAT, [2023])
+
+    shell = [r for r in results if r.company_ticker == "SHEL"]
+    assert len(shell) == 1
+    assert shell[0].value == 4200000
+
+    eni = [r for r in results if r.company_ticker == "ENI"]
+    assert len(eni) == 1
+    assert eni[0].value == 3100000
+
+    # FR row has no ACCOUNT_HOLDER_NAME, numeric INSTALLATION_NAME = unresolvable
+    unresolved = [r for r in results if r.company_ticker not in ("SHEL", "ENI")]
+    assert len(unresolved) == 1
+    assert unresolved[0].company_ticker == "37890"
+
+
+def test_parse_eu_ets_installations_lookup():
+    """Installations lookup dict resolves numeric codes when ACCOUNT_HOLDER_NAME is missing."""
+    lookup = {
+        "37890": "TotalEnergies SE - Normandy Refinery",
+        "FR-000000000009999": "TotalEnergies SE - Normandy Refinery",
+    }
+    results = parse_eu_ets_data(SAMPLE_EU_ETS_DATA_2023_FORMAT, [2023], installations_lookup=lookup)
+
+    total = [r for r in results if r.company_ticker == "TTE"]
+    assert len(total) == 1
+    assert total[0].value == 48000
+
+
+SAMPLE_EU_ETS_REAL_FORMAT = [
+    {
+        "REGISTRY_CODE": "DE",
+        "INSTALLATION_NAME": "Shell Deutschland Oil GmbH - Rheinland Refinery",
+        "INSTALLATION_IDENTIFIER": "DE-000000000001234",
+        "PERMIT_IDENTIFIER": "DE1234",
+        "MAIN_ACTIVITY_TYPE_CODE": "20",
+        "TOTAL_VERIFIED_EMISSIONS": 4500000,
+    },
+    {
+        "REGISTRY_CODE": "IT",
+        "INSTALLATION_NAME": "Eni S.p.A. - Sannazzaro Refinery",
+        "INSTALLATION_IDENTIFIER": "IT-000000000005678",
+        "PERMIT_IDENTIFIER": "IT5678",
+        "MAIN_ACTIVITY_TYPE_CODE": "20",
+        "TOTAL_VERIFIED_EMISSIONS": 3200000,
+    },
+    {
+        "REGISTRY_CODE": "FR",
+        "INSTALLATION_NAME": "Unknown French Factory",
+        "INSTALLATION_IDENTIFIER": "FR-000000000009999",
+        "PERMIT_IDENTIFIER": "FR9999",
+        "MAIN_ACTIVITY_TYPE_CODE": "20",
+        "TOTAL_VERIFIED_EMISSIONS": None,
+    },
+]
+
+
+def test_parse_eu_ets_total_verified_column():
+    """Current EC format uses TOTAL_VERIFIED_EMISSIONS instead of per-year columns."""
+    results = parse_eu_ets_data(SAMPLE_EU_ETS_REAL_FORMAT, [2022])
+
+    shell = [r for r in results if r.company_ticker == "SHEL"]
+    assert len(shell) == 1
+    assert shell[0].value == 4500000
+    assert shell[0].year == 2022
+
+    eni = [r for r in results if r.company_ticker == "ENI"]
+    assert len(eni) == 1
+    assert eni[0].value == 3200000
+
+    # FR row has None → skipped
+    assert len(results) == 2
+
+
 def test_eu_ets_download_url_map():
     """Every known compliance year should map to an EC download URL."""
     from src.pipeline.sources.eu_ets import EU_ETS_COMPLIANCE_URLS
