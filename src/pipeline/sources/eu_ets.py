@@ -307,24 +307,28 @@ class EuEtsSource(BaseSource):
         ws = wb.active
         print(f"  eu_ets {year}: sheet '{ws.title}'")
 
-        # Header is at row 21 (1-indexed in openpyxl).
-        header_row_index = 21
-        rows = list(ws.iter_rows(min_row=header_row_index, values_only=True))
+        # Auto-detect header row by scanning for VERIFIED_EMISSIONS or REGISTRY_CODE.
+        all_rows = list(ws.iter_rows(values_only=True))
+        header_idx = None
+        for i, row in enumerate(all_rows):
+            cell_strs = [str(c).strip() if c else "" for c in row]
+            if any("VERIFIED_EMISSIONS" in c for c in cell_strs) or "REGISTRY_CODE" in cell_strs:
+                header_idx = i
+                break
 
-        if not rows:
-            print(f"  eu_ets {year}: no rows from row {header_row_index} onward")
+        if header_idx is None:
+            print(f"  eu_ets {year}: no header row found in {len(all_rows)} rows")
+            wb.close()
             return []
 
-        headers = [str(h).strip() if h else f"col_{i}" for i, h in enumerate(rows[0])]
+        headers = [str(h).strip() if h else f"col_{i}" for i, h in enumerate(all_rows[header_idx])]
+        data_rows = all_rows[header_idx + 1:]
         verified_cols = [h for h in headers if h.startswith("VERIFIED_EMISSIONS")]
-        print(f"  eu_ets {year}: {len(headers)} columns, {len(rows) - 1} data rows, "
-              f"verified cols: {verified_cols or 'NONE FOUND'}")
-        if not verified_cols:
-            # Dump first 5 headers to help diagnose wrong header row
-            print(f"  eu_ets {year}: first 5 headers: {headers[:5]}")
+        print(f"  eu_ets {year}: header at row {header_idx + 1}, {len(headers)} columns, "
+              f"{len(data_rows)} data rows, verified cols: {verified_cols or 'NONE FOUND'}")
 
         records: list[dict] = []
-        for row in rows[1:]:
+        for row in data_rows:
             record = dict(zip(headers, row))
             records.append(record)
 
