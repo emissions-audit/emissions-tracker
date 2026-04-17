@@ -228,7 +228,6 @@ class EuEtsSource(BaseSource):
         """
         results: list[RawEmission] = []
         target_years = [y for y in years if y in EU_ETS_COMPLIANCE_URLS]
-        print(f"  eu_ets: target years {target_years} (from requested {years})")
 
         # Build installations lookup if any target year is 2023+
         installations_lookup = None
@@ -247,14 +246,13 @@ class EuEtsSource(BaseSource):
                 print(f"  eu_ets {year}: PARSE FAILED — {type(e).__name__}: {e}")
                 continue
             parsed = parse_eu_ets_data(records, [year], installations_lookup)
-            print(f"  eu_ets {year}: {len(records)} rows parsed → {len(parsed)} emissions")
+            print(f"  eu_ets {year}: {len(records)} rows → {len(parsed)} emissions")
             results.extend(parsed)
 
         if tickers:
             ticker_set = {t.upper() for t in tickers}
             results = [r for r in results if r.company_ticker.upper() in ticker_set]
 
-        print(f"  eu_ets: total {len(results)} raw emissions")
         return results
 
     async def _load_installations_lookup(self) -> dict[str, str]:
@@ -301,21 +299,17 @@ class EuEtsSource(BaseSource):
         async with httpx.AsyncClient(
             timeout=120.0, headers=_EU_ETS_HTTP_HEADERS
         ) as client:
-            last_status = None
             for attempt in range(_EU_ETS_MAX_RETRIES):
                 response = await client.get(url, follow_redirects=True)
-                last_status = response.status_code
                 if response.status_code != 429:
                     break
                 print(f"  eu_ets {year}: 429 rate-limited (attempt {attempt + 1}/{_EU_ETS_MAX_RETRIES})")
                 if attempt < _EU_ETS_MAX_RETRIES - 1:
                     await asyncio.sleep(_EU_ETS_RETRY_BACKOFF_S * (attempt + 1))
-            print(f"  eu_ets {year}: HTTP {last_status}, {len(response.content)} bytes")
             response.raise_for_status()
 
         wb = load_workbook(filename=io.BytesIO(response.content), read_only=True)
         ws = wb.active
-        print(f"  eu_ets {year}: sheet '{ws.title}'")
 
         # Auto-detect header row by scanning for VERIFIED_EMISSIONS or REGISTRY_CODE.
         all_rows = list(ws.iter_rows(values_only=True))
@@ -333,10 +327,6 @@ class EuEtsSource(BaseSource):
 
         headers = [str(h).strip() if h else f"col_{i}" for i, h in enumerate(all_rows[header_idx])]
         data_rows = all_rows[header_idx + 1:]
-        verified_cols = [h for h in headers if h.startswith("VERIFIED_EMISSIONS")]
-        print(f"  eu_ets {year}: header at row {header_idx + 1}, {len(headers)} columns, "
-              f"{len(data_rows)} data rows, verified cols: {verified_cols or 'NONE FOUND'}")
-        print(f"  eu_ets {year}: ALL headers: {headers}")
 
         records: list[dict] = []
         for row in data_rows:
