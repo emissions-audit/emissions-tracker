@@ -175,6 +175,12 @@ def parse_eu_ets_data(
             if value is None:
                 continue
 
+            # Excel cells may arrive as strings — coerce to float.
+            try:
+                value = float(value)
+            except (TypeError, ValueError):
+                continue
+
             source_url = (
                 f"https://climate.ec.europa.eu/eu-action/eu-emissions-trading-system/"
                 f"union-registry_en#tab-compliance-data"
