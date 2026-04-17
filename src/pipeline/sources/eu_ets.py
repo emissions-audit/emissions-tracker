@@ -101,7 +101,40 @@ def _resolve_installation_ticker(installation_name: str) -> str:
     return installation_name
 
 
-def parse_eu_ets_data(records: list[dict], years: list[int]) -> list[RawEmission]:
+def _resolve_operator_name(row: dict, installations_lookup: dict[str, str] | None = None) -> str:
+    """Extract the best available operator name from a compliance workbook row.
+
+    2023+ EC workbooks changed INSTALLATION_NAME to a numeric code.  This
+    function checks multiple columns in priority order and falls back to
+    an optional installations lookup dict (installation_id -> operator_name).
+    """
+    # Priority 1: ACCOUNT_HOLDER_NAME (present in some workbook versions)
+    account_holder = row.get("ACCOUNT_HOLDER_NAME") or row.get("OPERATOR_NAME")
+    if account_holder and isinstance(account_holder, str) and not account_holder.isdigit():
+        return account_holder.strip()
+
+    # Priority 2: INSTALLATION_NAME (reliable pre-2023)
+    installation_name = str(row.get("INSTALLATION_NAME", "")).strip()
+    if installation_name and not installation_name.isdigit():
+        return installation_name
+
+    # Priority 3: Installations lookup by INSTALLATION_IDENTIFIER or numeric code
+    if installations_lookup:
+        inst_id = str(row.get("INSTALLATION_IDENTIFIER", "")).strip()
+        if inst_id and inst_id in installations_lookup:
+            return installations_lookup[inst_id]
+        if installation_name and installation_name in installations_lookup:
+            return installations_lookup[installation_name]
+
+    # Fallback: return whatever we have (may be numeric — won't resolve to a ticker)
+    return installation_name or ""
+
+
+def parse_eu_ets_data(
+    records: list[dict],
+    years: list[int],
+    installations_lookup: dict[str, str] | None = None,
+) -> list[RawEmission]:
     """Parse pre-extracted EU ETS installation dicts into RawEmission records.
 
     Each *record* represents one installation row from the EUTL Excel file
@@ -116,6 +149,9 @@ def parse_eu_ets_data(records: list[dict], years: list[int]) -> list[RawEmission
         ``VERIFIED_EMISSIONS_{year}`` keys.
     years:
         Which reporting years to extract.
+    installations_lookup:
+        Optional mapping from installation ID/code to operator name,
+        for resolving 2023+ numeric INSTALLATION_NAME values.
 
     Returns
     -------
@@ -125,9 +161,9 @@ def parse_eu_ets_data(records: list[dict], years: list[int]) -> list[RawEmission
     results: list[RawEmission] = []
 
     for row in records:
-        installation_name = row.get("INSTALLATION_NAME", "")
+        operator_name = _resolve_operator_name(row, installations_lookup)
 
-        ticker = _resolve_installation_ticker(installation_name)
+        ticker = _resolve_installation_ticker(operator_name)
 
         for year in years:
             col = f"VERIFIED_EMISSIONS_{year}"
@@ -175,10 +211,19 @@ class EuEtsSource(BaseSource):
         don't have URLs for (e.g. current or future year where the EC has not
         yet published).
 
+        For 2023+ workbooks where INSTALLATION_NAME is numeric, the parser
+        falls back to ACCOUNT_HOLDER_NAME or an installations lookup dict.
+
         Returns a merged list across all downloaded years.
         """
         results: list[RawEmission] = []
         target_years = [y for y in years if y in EU_ETS_COMPLIANCE_URLS]
+        print(f"  eu_ets: target years {target_years} (from requested {years})")
+
+        # Build installations lookup if any target year is 2023+
+        installations_lookup = None
+        if any(y >= 2023 for y in target_years):
+            installations_lookup = await self._load_installations_lookup()
 
         for i, year in enumerate(target_years):
             if i > 0:
@@ -186,24 +231,56 @@ class EuEtsSource(BaseSource):
             try:
                 records = await self._download_and_parse(year)
             except httpx.HTTPError as e:
-                print(
-                    f"  eu_ets {year} download failed: {type(e).__name__}: {e}",
-                    file=sys.stderr,
-                )
+                print(f"  eu_ets {year}: DOWNLOAD FAILED — {type(e).__name__}: {e}")
                 continue
             except Exception as e:
-                print(
-                    f"  eu_ets {year} parse failed: {type(e).__name__}: {e}",
-                    file=sys.stderr,
-                )
+                print(f"  eu_ets {year}: PARSE FAILED — {type(e).__name__}: {e}")
                 continue
-            results.extend(parse_eu_ets_data(records, [year]))
+            parsed = parse_eu_ets_data(records, [year], installations_lookup)
+            print(f"  eu_ets {year}: {len(records)} rows parsed → {len(parsed)} emissions")
+            results.extend(parsed)
 
         if tickers:
             ticker_set = {t.upper() for t in tickers}
             results = [r for r in results if r.company_ticker.upper() in ticker_set]
 
+        print(f"  eu_ets: total {len(results)} raw emissions")
         return results
+
+    async def _load_installations_lookup(self) -> dict[str, str]:
+        """Load installation ID → operator name mapping.
+
+        Checks for a local data/eu_ets_installations.csv first. If not found,
+        returns an empty dict (graceful degradation — ACCOUNT_HOLDER_NAME in
+        the workbook is the primary fallback for 2023+ data).
+        """
+        import csv
+        from pathlib import Path
+
+        local_path = Path(__file__).resolve().parents[3] / "data" / "eu_ets_installations.csv"
+        if local_path.exists():
+            lookup = {}
+            with open(local_path, encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    inst_id = row.get("INSTALLATION_IDENTIFIER", "").strip()
+                    inst_code = row.get("INSTALLATION_NAME", "").strip()
+                    operator = row.get("ACCOUNT_HOLDER_NAME", "").strip()
+                    if operator:
+                        if inst_id:
+                            lookup[inst_id] = operator
+                        if inst_code:
+                            lookup[inst_code] = operator
+            if lookup:
+                print(f"  eu_ets: loaded {len(lookup)} installation lookups from {local_path}")
+            return lookup
+
+        print(
+            "  eu_ets: no data/eu_ets_installations.csv found — "
+            "relying on ACCOUNT_HOLDER_NAME column for 2023+ workbooks",
+            file=sys.stderr,
+        )
+        return {}
 
     async def _download_and_parse(self, year: int) -> list[dict]:
         """Download a single year's Excel workbook and convert rows to dicts."""
@@ -214,25 +291,37 @@ class EuEtsSource(BaseSource):
         async with httpx.AsyncClient(
             timeout=120.0, headers=_EU_ETS_HTTP_HEADERS
         ) as client:
+            last_status = None
             for attempt in range(_EU_ETS_MAX_RETRIES):
                 response = await client.get(url, follow_redirects=True)
+                last_status = response.status_code
                 if response.status_code != 429:
                     break
+                print(f"  eu_ets {year}: 429 rate-limited (attempt {attempt + 1}/{_EU_ETS_MAX_RETRIES})")
                 if attempt < _EU_ETS_MAX_RETRIES - 1:
                     await asyncio.sleep(_EU_ETS_RETRY_BACKOFF_S * (attempt + 1))
+            print(f"  eu_ets {year}: HTTP {last_status}, {len(response.content)} bytes")
             response.raise_for_status()
 
         wb = load_workbook(filename=io.BytesIO(response.content), read_only=True)
         ws = wb.active
+        print(f"  eu_ets {year}: sheet '{ws.title}', dims {ws.dimensions}")
 
         # Header is at row 21 (1-indexed in openpyxl).
         header_row_index = 21
         rows = list(ws.iter_rows(min_row=header_row_index, values_only=True))
 
         if not rows:
+            print(f"  eu_ets {year}: no rows from row {header_row_index} onward")
             return []
 
         headers = [str(h).strip() if h else f"col_{i}" for i, h in enumerate(rows[0])]
+        verified_cols = [h for h in headers if h.startswith("VERIFIED_EMISSIONS")]
+        print(f"  eu_ets {year}: {len(headers)} columns, {len(rows) - 1} data rows, "
+              f"verified cols: {verified_cols or 'NONE FOUND'}")
+        if not verified_cols:
+            # Dump first 5 headers to help diagnose wrong header row
+            print(f"  eu_ets {year}: first 5 headers: {headers[:5]}")
 
         records: list[dict] = []
         for row in rows[1:]:
