@@ -326,6 +326,7 @@ class EuEtsSource(BaseSource):
         verified_cols = [h for h in headers if h.startswith("VERIFIED_EMISSIONS")]
         print(f"  eu_ets {year}: header at row {header_idx + 1}, {len(headers)} columns, "
               f"{len(data_rows)} data rows, verified cols: {verified_cols or 'NONE FOUND'}")
+        print(f"  eu_ets {year}: ALL headers: {headers}")
 
         records: list[dict] = []
         for row in data_rows:
