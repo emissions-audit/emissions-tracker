@@ -305,7 +305,7 @@ class EuEtsSource(BaseSource):
 
         wb = load_workbook(filename=io.BytesIO(response.content), read_only=True)
         ws = wb.active
-        print(f"  eu_ets {year}: sheet '{ws.title}', dims {ws.dimensions}")
+        print(f"  eu_ets {year}: sheet '{ws.title}'")
 
         # Header is at row 21 (1-indexed in openpyxl).
         header_row_index = 21
