@@ -34,6 +34,7 @@ class AnalyticsMiddleware(BaseHTTPMiddleware):
         api_key_hash = hashlib.sha256(api_key.encode()).hexdigest()[:16] if api_key else None
         tier = getattr(request.state, "tier", "anonymous")
         client_ip = request.client.host if request.client else None
+        referrer = request.headers.get("Referer") or request.headers.get("Referrer")
 
         async with self.db_session_factory() as db:
             try:
@@ -45,6 +46,7 @@ class AnalyticsMiddleware(BaseHTTPMiddleware):
                     api_key_hash=api_key_hash,
                     tier=tier,
                     client_ip=client_ip,
+                    referrer=referrer,
                 )
                 db.add(log)
                 await db.commit()

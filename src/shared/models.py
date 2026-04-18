@@ -162,6 +162,7 @@ class ApiCallLog(Base):
     api_key_hash: Mapped[str | None] = mapped_column(String(16))
     tier: Mapped[str] = mapped_column(String(20), default="anonymous")
     client_ip: Mapped[str | None] = mapped_column(String(45))
+    referrer: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

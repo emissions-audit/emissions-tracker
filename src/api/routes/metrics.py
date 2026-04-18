@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from sqlalchemy import select, func, text, cast, Date
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.shared.models import ApiCallLog, ApiKey, CoverageSnapshot
+from src.shared.models import ApiCallLog, ApiKey, CoverageSnapshot, EnterpriseInquiry
 
 
 # Captured at import time. Good-enough uptime signal for launch readiness.
@@ -96,12 +96,57 @@ def build_router(get_db) -> APIRouter:
         except Exception:
             api_keys_payload = None
 
+        # Enterprise funnel metrics
+        enterprise_payload: dict | None
+        try:
+            # Page views: GET requests to /enterprise* endpoints
+            page_views = (await db.execute(
+                select(func.count(ApiCallLog.id))
+                .where(
+                    ApiCallLog.endpoint.like("/enterprise%"),
+                    ApiCallLog.method == "GET",
+                )
+            )).scalar() or 0
+
+            # Form submissions: total enterprise inquiries
+            submissions = (await db.execute(
+                select(func.count(EnterpriseInquiry.id))
+            )).scalar() or 0
+
+            # Referral paths: top referrer domains for enterprise pages
+            referrer_rows = (await db.execute(
+                select(
+                    ApiCallLog.referrer,
+                    func.count(ApiCallLog.id).label("count"),
+                )
+                .where(
+                    ApiCallLog.endpoint.like("/enterprise%"),
+                    ApiCallLog.referrer.isnot(None),
+                    ApiCallLog.referrer != "",
+                )
+                .group_by(ApiCallLog.referrer)
+                .order_by(func.count(ApiCallLog.id).desc())
+                .limit(10)
+            )).all()
+
+            enterprise_payload = {
+                "page_views": page_views,
+                "submissions": submissions,
+                "referrers": [
+                    {"referrer": ref, "count": count}
+                    for ref, count in referrer_rows
+                ],
+            }
+        except Exception:
+            enterprise_payload = None
+
         return {
             "uptime_seconds": uptime,
             "started_at": STARTED_AT.isoformat().replace("+00:00", "Z"),
             "version": _VERSION,
             "coverage": coverage_payload,
             "api_keys": api_keys_payload,
+            "enterprise": enterprise_payload,
             "database": database_status,
         }
 
