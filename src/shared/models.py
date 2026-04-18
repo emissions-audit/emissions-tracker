@@ -105,6 +105,9 @@ class DataPoint(Base):
 
 class CrossValidation(Base):
     __tablename__ = "cross_validations"
+    __table_args__ = (
+        UniqueConstraint("company_id", "year", "scope", name="uq_cv_natural_key"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     company_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("companies.id"))

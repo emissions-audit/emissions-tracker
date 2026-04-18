@@ -206,19 +206,42 @@ def validate():
     typer.echo(f"Computed {len(results)} cross-validations")
 
     for cv_data in results:
-        cv = CrossValidation(
-            id=uuid.uuid4(),
-            company_id=cv_data["company_id"],
-            year=cv_data["year"],
-            scope=cv_data["scope"],
-            source_count=cv_data["source_count"],
-            min_value=cv_data["min_value"],
-            max_value=cv_data["max_value"],
-            spread_pct=cv_data["spread_pct"],
-            flag=cv_data["flag"],
+        existing_cv = (
+            session.query(CrossValidation)
+            .filter(
+                CrossValidation.company_id == cv_data["company_id"],
+                CrossValidation.year == cv_data["year"],
+                CrossValidation.scope == cv_data["scope"],
+            )
+            .first()
         )
-        session.merge(cv)
-        session.flush()
+        if existing_cv is None:
+            cv = CrossValidation(
+                id=uuid.uuid4(),
+                company_id=cv_data["company_id"],
+                year=cv_data["year"],
+                scope=cv_data["scope"],
+                source_count=cv_data["source_count"],
+                min_value=cv_data["min_value"],
+                max_value=cv_data["max_value"],
+                spread_pct=cv_data["spread_pct"],
+                flag=cv_data["flag"],
+            )
+            session.add(cv)
+            session.flush()
+        else:
+            cv = existing_cv
+            cv.source_count = cv_data["source_count"]
+            cv.min_value = cv_data["min_value"]
+            cv.max_value = cv_data["max_value"]
+            cv.spread_pct = cv_data["spread_pct"]
+            cv.flag = cv_data["flag"]
+            cv.updated_at = datetime.utcnow()
+            # Delete old entries — they'll be re-created from current data
+            session.query(SourceEntry).filter(
+                SourceEntry.cross_validation_id == cv.id
+            ).delete()
+            session.flush()
 
         for entry_data in cv_data["entries"]:
             entry = SourceEntry(
