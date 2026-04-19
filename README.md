@@ -144,6 +144,16 @@ pytest tests/ -v
    railway run emissions-pipeline seed
    ```
 
+### Running the ingestion pipeline
+
+Data ingestion runs on GitHub Actions — weekly cron (`0 6 * * 1`) plus manual `workflow_dispatch`. For a self-hosted fork:
+
+1. **Configure the database secret.** In your Railway (or equivalent) dashboard, copy the PostgreSQL connection string (`postgresql://user:pass@host:port/dbname`). In GitHub → `Settings → Secrets and variables → Actions → New repository secret`, name it `RAILWAY_DATABASE_URL`. The `ingest.yml` workflow reads `secrets.RAILWAY_DATABASE_URL` as `DATABASE_URL`.
+2. **Trigger a run manually.** Visit `Actions → Data Ingestion Pipeline → Run workflow`. `Sources` defaults to `all`; pass a comma-separated subset (e.g., `edgar,climate_trace`) to limit. Typical full run is 60–90 min (`timeout-minutes: 120`).
+3. **Verify.** `curl https://<your-host>/v1/stats` should return the expected company count. If numbers are off, check the workflow run log for source-level warnings.
+
+The ingestion is idempotent (natural-key upserts on `emissions_data` and `cross_validations`) — re-running is safe and refreshes figures without duplicating rows.
+
 ### Docker Compose (self-hosted)
 
 ```bash
