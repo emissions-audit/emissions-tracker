@@ -149,6 +149,9 @@ class ApiKey(Base):
     rate_limit: Mapped[int] = mapped_column(Integer, default=100)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # ET-79: onboarding-funnel signal — stamped once on the first authenticated
+    # request by the first-call tracking middleware. Remains NULL until then.
+    first_api_call_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class ApiCallLog(Base):

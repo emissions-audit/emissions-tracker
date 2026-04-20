@@ -11,6 +11,7 @@ from src.api.routes import validation, pledges, filings
 from src.api.routes import meta, export
 from src.api.routes import health, coverage
 from src.api.routes import quickstart, metrics
+from src.api.routes import launch_metrics
 from src.api.routes import discrepancies_page
 from src.api.routes import project_stats
 from src.api.routes import landing
@@ -20,6 +21,7 @@ from src.api.routes import webhooks
 from src.api.middleware.auth import ApiKeyMiddleware
 from src.api.middleware.rate_limit import RateLimitMiddleware
 from src.api.middleware.analytics import AnalyticsMiddleware
+from src.api.middleware.first_call_tracking import FirstCallTrackingMiddleware
 
 
 def create_app(db_session_override: AsyncSession | None = None) -> FastAPI:
@@ -64,6 +66,9 @@ def create_app(db_session_override: AsyncSession | None = None) -> FastAPI:
 
     # Middleware (last added = outermost = runs first)
     app.add_middleware(RateLimitMiddleware)
+    # ET-79: added before ApiKeyMiddleware so it's *inner* to auth — by the time
+    # it runs, request.state.api_key_id has already been resolved.
+    app.add_middleware(FirstCallTrackingMiddleware, db_session_factory=session_factory)
     app.add_middleware(ApiKeyMiddleware, db_session_factory=session_factory)
     app.add_middleware(AnalyticsMiddleware, db_session_factory=session_factory)
 
@@ -80,6 +85,7 @@ def create_app(db_session_override: AsyncSession | None = None) -> FastAPI:
     app.include_router(coverage.build_router(get_db))
     app.include_router(quickstart.build_router(get_db))
     app.include_router(metrics.build_router(get_db))
+    app.include_router(launch_metrics.build_router(get_db))
     app.include_router(discrepancies_page.build_router(get_db))
     app.include_router(project_stats.build_router(get_db))
     app.include_router(landing.build_router(get_db))
