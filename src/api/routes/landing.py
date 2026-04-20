@@ -37,6 +37,18 @@ _LANDING_HTML = """<!DOCTYPE html>
            font-size: 0.9rem; border-top: 1px solid #eee; }
   a { color: #0366d6; text-decoration: none; }
   a:hover { text-decoration: underline; }
+  /* ET-78: social-proof widget */
+  .launch-proof { display: none; margin: 1.25rem auto 0; max-width: 720px;
+                   padding: 0.5rem 1rem; text-align: center; color: #555;
+                   font-size: 0.92rem; line-height: 1.5; }
+  .launch-proof.visible { display: flex; flex-wrap: wrap; justify-content: center;
+                           gap: 0.35rem 0.9rem; }
+  .launch-proof .lp-sep { color: #bbb; }
+  .launch-proof .lp-item { white-space: nowrap; }
+  @media (max-width: 420px) {
+    .launch-proof { font-size: 0.85rem; }
+    .launch-proof .lp-sep { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -72,6 +84,9 @@ _LANDING_HTML = """<!DOCTYPE html>
       <div class="stat-label">GitHub Stars</div>
     </div>
   </div>
+
+  <!-- ET-78: live social-proof counter (hidden until /v1/metrics/launch responds) -->
+  <div id="launch-proof" class="launch-proof" aria-live="polite"></div>
 </div>
 
 <div class="content">
@@ -153,6 +168,42 @@ _LANDING_HTML = """<!DOCTYPE html>
       .then(function(d) { set('companies', d.company_count || 0); })
       .catch(function() {});
   }, 60000);
+})();
+
+// ET-78: social-proof widget — fetch /v1/metrics/launch and render a live
+// counter line. Hides individual fields when null/0 and hides the whole
+// widget if nothing is worth showing. Graceful on fetch failure.
+(function() {
+  var el = document.getElementById('launch-proof');
+  if (!el) return;
+
+  function renderProof(data) {
+    if (!data) { el.className = 'launch-proof'; el.textContent = ''; return; }
+    var parts = [];
+    if (data.stars_total != null && data.stars_total > 0) {
+      parts.push('<span class="lp-item">&#9733; ' + data.stars_total + ' GitHub stars</span>');
+    }
+    if (data.citations_mentioned != null && data.citations_mentioned > 0) {
+      parts.push('<span class="lp-item">' + data.citations_mentioned + ' citations this week</span>');
+    }
+    if (parts.length === 0) {
+      el.className = 'launch-proof';
+      el.textContent = '';
+      return;
+    }
+    el.innerHTML = parts.join('<span class="lp-sep">&middot;</span>');
+    el.className = 'launch-proof visible';
+  }
+
+  function loadProof() {
+    fetch('/v1/metrics/launch')
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(renderProof)
+      .catch(function() { /* leave widget hidden on error */ });
+  }
+
+  loadProof();
+  setInterval(loadProof, 30000);
 })();
 </script>
 
