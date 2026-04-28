@@ -28,9 +28,9 @@ def test_compute_cross_validations_multiple_sources():
 
     emissions = [
         {"company_id": company_id, "year": 2023, "scope": "1",
-         "value_mt_co2e": 100_000_000, "source_id": filing_a},
+         "value_t_co2e": 100_000_000, "source_id": filing_a},
         {"company_id": company_id, "year": 2023, "scope": "1",
-         "value_mt_co2e": 120_000_000, "source_id": filing_b},
+         "value_t_co2e": 120_000_000, "source_id": filing_b},
     ]
 
     source_types = {
@@ -56,7 +56,7 @@ def test_compute_cross_validations_multiple_sources():
 def test_compute_cross_validations_single_source_skipped():
     emissions = [
         {"company_id": uuid.uuid4(), "year": 2023, "scope": "1",
-         "value_mt_co2e": 100_000_000, "source_id": uuid.uuid4()},
+         "value_t_co2e": 100_000_000, "source_id": uuid.uuid4()},
     ]
     results = compute_cross_validations(emissions, {})
     assert results == []

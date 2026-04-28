@@ -98,13 +98,13 @@ def seeded_session(db_session):
         Filing(id=filing2_id, company_id=exxon_id, year=2023,
                filing_type="10k_xbrl", parser_used="xbrl", raw_hash="def"),
         Emission(id=uuid.uuid4(), company_id=shell_id, year=2023, scope="1",
-                 value_mt_co2e=68_000_000, source_id=filing1_id),
+                 value_t_co2e=68_000_000, source_id=filing1_id),
         Emission(id=uuid.uuid4(), company_id=shell_id, year=2023, scope="2",
-                 value_mt_co2e=10_000_000, source_id=filing1_id),
+                 value_t_co2e=10_000_000, source_id=filing1_id),
         Emission(id=uuid.uuid4(), company_id=shell_id, year=2022, scope="1",
-                 value_mt_co2e=72_000_000, source_id=filing1_id),
+                 value_t_co2e=72_000_000, source_id=filing1_id),
         Emission(id=uuid.uuid4(), company_id=exxon_id, year=2023, scope="1",
-                 value_mt_co2e=112_000_000, source_id=filing2_id),
+                 value_t_co2e=112_000_000, source_id=filing2_id),
     ])
     db_session._session.commit()
 
@@ -115,9 +115,9 @@ def seeded_session(db_session):
                         source_count=2, min_value=65_000_000, max_value=72_000_000,
                         spread_pct=10.77, flag="yellow"),
         SourceEntry(id=uuid.uuid4(), cross_validation_id=cv_id,
-                    source_type="regulatory", value_mt_co2e=65_000_000, filing_id=filing1_id),
+                    source_type="regulatory", value_t_co2e=65_000_000, filing_id=filing1_id),
         SourceEntry(id=uuid.uuid4(), cross_validation_id=cv_id,
-                    source_type="satellite", value_mt_co2e=72_000_000),
+                    source_type="satellite", value_t_co2e=72_000_000),
     ])
     db_session._session.commit()
 
@@ -131,11 +131,11 @@ def seeded_session(db_session):
         ),
         SourceEntry(
             id=uuid.uuid4(), cross_validation_id=cv_exxon_id,
-            source_type="regulatory", value_mt_co2e=112_000_000, filing_id=filing2_id,
+            source_type="regulatory", value_t_co2e=112_000_000, filing_id=filing2_id,
         ),
         SourceEntry(
             id=uuid.uuid4(), cross_validation_id=cv_exxon_id,
-            source_type="satellite", value_mt_co2e=168_000_000,
+            source_type="satellite", value_t_co2e=168_000_000,
         ),
     ])
     db_session._session.commit()
@@ -144,7 +144,7 @@ def seeded_session(db_session):
     db_session.add_all([
         Pledge(id=uuid.uuid4(), company_id=shell_id, pledge_type="net_zero",
                target_year=2050, target_scope="1+2+3", target_reduction_pct=100.0,
-               baseline_year=2016, baseline_value_mt_co2e=1_700_000_000,
+               baseline_year=2016, baseline_value_t_co2e=1_700_000_000,
                source_id=filing1_id),
     ])
     db_session._session.commit()
