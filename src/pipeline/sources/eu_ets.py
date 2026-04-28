@@ -1,10 +1,18 @@
 """EU Emissions Trading System (EU ETS) data source.
 
-Downloads verified emissions data from the European Commission's Transaction
-Log (EUTL) Excel exports and maps installations to company tickers.
+Downloads verified emissions data from the European Commission's
+Transaction Log (EUTL) Excel exports and maps installations to
+company tickers.
 
-EU ETS reports emissions at installation level in **tonnes CO2e** (Scope 1
-only, as the scheme covers direct emissions from regulated installations).
+EU ETS reports emissions at installation level in **tonnes CO2e**
+(t_co2e — Scope 1 only, since the scheme covers direct emissions
+from regulated installations).
+
+PARTIAL COVERAGE NOTE: EU ETS only covers EU-located installations.
+For non-EU-headquartered companies (e.g. XOM, CVX), this source will
+report substantially less than the company's global Scope 1. This is
+correct behavior for cross-validation; CV engine semantics for partial
+sources are tracked in ET-85.
 """
 
 import asyncio

@@ -1,10 +1,15 @@
 """EPA Greenhouse Gas Reporting Program (GHGRP) data source.
 
-Fetches facility-level mandatory emissions reports from the EPA Envirofacts
-API.  Each API row represents a single greenhouse gas at a single facility for
-a given year.  Rows are aggregated into a single CO2-equivalent total per
-facility+year, then mapped to stock tickers via the shared company_mapping
-module.
+Fetches facility-level mandatory emissions reports from the EPA
+Envirofacts API. Each API row represents a single greenhouse gas at
+a single facility for a given year. Rows are aggregated into a single
+CO2-equivalent total per facility+year (in tonnes CO2e — t_co2e), then
+mapped to stock tickers via the shared company_mapping module.
+
+PARTIAL COVERAGE NOTE: EPA GHGRP covers only US facilities reporting
+above the 25,000 metric tons CO2e threshold. For multinational companies
+(e.g. SHEL, BP, TTE), this source reports only US-domestic Scope 1.
+CV engine semantics for partial sources tracked in ET-85.
 """
 
 from collections import defaultdict

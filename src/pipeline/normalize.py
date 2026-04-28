@@ -1,10 +1,8 @@
 import re
 
 UNIT_MULTIPLIERS = {
-    "mt_co2e": 1.0,
-    "kt_co2e": 1_000.0,
-    "t_co2e": 0.001,
-    "metric_tons_co2e": 0.001,
+    "t_co2e": 1.0,
+    "metric_tons_co2e": 1.0,
 }
 
 SCOPE_MAP = {

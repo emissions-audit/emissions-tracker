@@ -28,7 +28,7 @@ def parse_cdp_response(data: list[dict], years: list[int]) -> list[RawEmission]:
                     year=row["year"],
                     scope=scope_label,
                     value=value,
-                    unit="mt_co2e",
+                    unit="t_co2e",
                     methodology="ghg_protocol",
                     verified=verified,
                     source_url="https://www.cdp.net",

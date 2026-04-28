@@ -58,7 +58,7 @@ def parse_carb_response(data: list[dict], years: list[int]) -> list[RawEmission]
                     year=row["reporting_year"],
                     scope=scope_label,
                     value=value,
-                    unit="mt_co2e",
+                    unit="t_co2e",
                     methodology="ghg_protocol",
                     verified=verified,
                     source_url=source_url,
