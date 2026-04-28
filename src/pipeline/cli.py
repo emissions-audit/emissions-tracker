@@ -120,13 +120,13 @@ def _upsert_emissions(session, raw_emissions: list[RawEmission]):
                 company_id=company.id,
                 year=raw.year,
                 scope=normalized_scope,
-                value_mt_co2e=normalized_value,
+                value_t_co2e=normalized_value,
                 methodology=raw.methodology,
                 verified=raw.verified,
                 source_id=filing.id,
             ))
         else:
-            emission.value_mt_co2e = normalized_value
+            emission.value_t_co2e = normalized_value
             emission.methodology = raw.methodology
             emission.verified = raw.verified
         count += 1
@@ -204,7 +204,7 @@ def validate():
 
     emission_dicts = [
         {"company_id": e.company_id, "year": e.year, "scope": e.scope,
-         "value_mt_co2e": float(e.value_mt_co2e), "source_id": e.source_id}
+         "value_t_co2e": float(e.value_t_co2e), "source_id": e.source_id}
         for e in emissions
     ]
 
@@ -257,7 +257,7 @@ def validate():
                 id=uuid.uuid4(),
                 cross_validation_id=cv.id,
                 source_type=entry_data["source_type"],
-                value_mt_co2e=entry_data["value_mt_co2e"],
+                value_t_co2e=entry_data["value_t_co2e"],
                 filing_id=entry_data.get("filing_id"),
             )
             session.add(entry)

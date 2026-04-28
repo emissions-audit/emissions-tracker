@@ -52,7 +52,7 @@ def export_emissions_json(session: Session) -> list[dict]:
             "company_ticker": ticker,
             "year": e.year,
             "scope": e.scope,
-            "value_mt_co2e": float(e.value_mt_co2e),
+            "value_t_co2e": float(e.value_t_co2e),
             "methodology": e.methodology,
             "verified": e.verified,
         }
@@ -96,7 +96,7 @@ def export_cross_validations_json(session: Session) -> list[dict]:
             "spread_pct": float(cv.spread_pct),
             "flag": cv.flag,
             "sources": [
-                {"source_type": se.source_type, "value_mt_co2e": float(se.value_mt_co2e)}
+                {"source_type": se.source_type, "value_t_co2e": float(se.value_t_co2e)}
                 for se in entries
             ],
         })

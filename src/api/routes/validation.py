@@ -37,7 +37,7 @@ def build_router(get_db) -> APIRouter:
             resp.entries = [
                 {
                     "source_type": e.source_type,
-                    "value_mt_co2e": float(e.value_mt_co2e),
+                    "value_t_co2e": float(e.value_t_co2e),
                     "filing_id": e.filing_id,
                     "filing_url": filings[e.filing_id].source_url if e.filing_id and e.filing_id in filings else None,
                 }
@@ -113,7 +113,7 @@ def build_router(get_db) -> APIRouter:
                         filing_url = filing.source_url
                 sources.append(DiscrepancySourceDetail(
                     source_type=e.source_type,
-                    value_mt_co2e=float(e.value_mt_co2e),
+                    value_t_co2e=float(e.value_t_co2e),
                     filing_url=filing_url,
                 ))
             items.append(DiscrepancyResponse(
@@ -158,7 +158,7 @@ def build_router(get_db) -> APIRouter:
                         filing_url = filing.source_url
                 sources.append(DiscrepancySourceDetail(
                     source_type=e.source_type,
-                    value_mt_co2e=float(e.value_mt_co2e),
+                    value_t_co2e=float(e.value_t_co2e),
                     filing_url=filing_url,
                 ))
             items.append(DiscrepancyResponse(
@@ -205,8 +205,8 @@ def build_router(get_db) -> APIRouter:
         writer = csv.writer(output)
         writer.writerow([
             "company_name", "ticker", "year", "scope",
-            "min_value_mt_co2e", "spread_pct", "delta_mt_co2e",
-            "max_value_mt_co2e", "flag", "source_count",
+            "min_value_t_co2e", "spread_pct", "delta_mt_co2e",
+            "max_value_t_co2e", "flag", "source_count",
         ])
         for cv, name, tkr in rows:
             writer.writerow([

@@ -35,7 +35,7 @@ def build_router(get_db) -> APIRouter:
             writer = csv.writer(output)
             writer.writerow([
                 "company_name", "ticker", "year", "scope",
-                "value_mt_co2e", "methodology", "verified",
+                "value_t_co2e", "methodology", "verified",
             ])
 
             company_map = {c.id: c for c in companies}
@@ -43,7 +43,7 @@ def build_router(get_db) -> APIRouter:
                 c = company_map.get(e.company_id)
                 writer.writerow([
                     c.name if c else "", c.ticker if c else "",
-                    e.year, e.scope, float(e.value_mt_co2e),
+                    e.year, e.scope, float(e.value_t_co2e),
                     e.methodology, e.verified,
                 ])
 
@@ -62,7 +62,7 @@ def build_router(get_db) -> APIRouter:
             ],
             "emissions": [
                 {"company_id": str(e.company_id), "year": e.year, "scope": e.scope,
-                 "value_mt_co2e": float(e.value_mt_co2e), "methodology": e.methodology,
+                 "value_t_co2e": float(e.value_t_co2e), "methodology": e.methodology,
                  "verified": e.verified}
                 for e in emissions
             ],
@@ -93,9 +93,9 @@ def build_router(get_db) -> APIRouter:
         if format == "csv":
             output = io.StringIO()
             writer = csv.writer(output)
-            writer.writerow(["year", "scope", "value_mt_co2e", "methodology", "verified"])
+            writer.writerow(["year", "scope", "value_t_co2e", "methodology", "verified"])
             for e in emissions:
-                writer.writerow([e.year, e.scope, float(e.value_mt_co2e), e.methodology, e.verified])
+                writer.writerow([e.year, e.scope, float(e.value_t_co2e), e.methodology, e.verified])
             output.seek(0)
             return StreamingResponse(
                 output, media_type="text/csv",
@@ -105,7 +105,7 @@ def build_router(get_db) -> APIRouter:
         return {
             "company": {"id": str(company.id), "name": company.name, "ticker": company.ticker},
             "emissions": [
-                {"year": e.year, "scope": e.scope, "value_mt_co2e": float(e.value_mt_co2e),
+                {"year": e.year, "scope": e.scope, "value_t_co2e": float(e.value_t_co2e),
                  "methodology": e.methodology, "verified": e.verified}
                 for e in emissions
             ],

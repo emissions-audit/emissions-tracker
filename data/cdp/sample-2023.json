@@ -3,45 +3,45 @@
     "organization": "Shell plc",
     "ticker": "SHEL",
     "year": 2023,
-    "scope_1_mt_co2e": 68000000,
-    "scope_2_mt_co2e": 10000000,
-    "scope_3_mt_co2e": 1200000000,
+    "scope_1_t_co2e": 68000000,
+    "scope_2_t_co2e": 10000000,
+    "scope_3_t_co2e": 1200000000,
     "verification_status": "Third-party verified"
   },
   {
     "organization": "BP plc",
     "ticker": "BP",
     "year": 2023,
-    "scope_1_mt_co2e": 33700000,
-    "scope_2_mt_co2e": 5200000,
-    "scope_3_mt_co2e": 307000000,
+    "scope_1_t_co2e": 33700000,
+    "scope_2_t_co2e": 5200000,
+    "scope_3_t_co2e": 307000000,
     "verification_status": "Third-party verified"
   },
   {
     "organization": "TotalEnergies SE",
     "ticker": "TTE",
     "year": 2023,
-    "scope_1_mt_co2e": 37000000,
-    "scope_2_mt_co2e": 6000000,
-    "scope_3_mt_co2e": 400000000,
+    "scope_1_t_co2e": 37000000,
+    "scope_2_t_co2e": 6000000,
+    "scope_3_t_co2e": 400000000,
     "verification_status": "Third-party verified"
   },
   {
     "organization": "Chevron Corporation",
     "ticker": "CVX",
     "year": 2023,
-    "scope_1_mt_co2e": 54000000,
-    "scope_2_mt_co2e": 8000000,
-    "scope_3_mt_co2e": 650000000,
+    "scope_1_t_co2e": 54000000,
+    "scope_2_t_co2e": 8000000,
+    "scope_3_t_co2e": 650000000,
     "verification_status": "Third-party verified"
   },
   {
     "organization": "ExxonMobil Corporation",
     "ticker": "XOM",
     "year": 2023,
-    "scope_1_mt_co2e": 112000000,
-    "scope_2_mt_co2e": 14000000,
-    "scope_3_mt_co2e": 540000000,
+    "scope_1_t_co2e": 112000000,
+    "scope_2_t_co2e": 14000000,
+    "scope_3_t_co2e": 540000000,
     "verification_status": "Third-party verified"
   }
 ]

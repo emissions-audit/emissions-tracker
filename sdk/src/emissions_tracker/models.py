@@ -23,7 +23,7 @@ class Emission:
     company_id: str
     year: int
     scope: str
-    value_mt_co2e: float
+    value_t_co2e: float
     methodology: str | None = None
     verified: bool | None = None
     source_id: str | None = None
@@ -50,14 +50,14 @@ class Pledge:
     target_scope: str | None = None
     target_reduction_pct: float | None = None
     baseline_year: int | None = None
-    baseline_value_mt_co2e: float | None = None
+    baseline_value_t_co2e: float | None = None
     source_id: str | None = None
 
 
 @dataclass
 class SourceDetail:
     source_type: str
-    value_mt_co2e: float
+    value_t_co2e: float
     filing_url: str | None = None
 
 
@@ -80,7 +80,7 @@ class Discrepancy:
 @dataclass
 class SourceEntry:
     source_type: str
-    value_mt_co2e: float
+    value_t_co2e: float
     filing_id: str | None = None
     filing_url: str | None = None
 

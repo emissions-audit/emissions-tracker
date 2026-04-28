@@ -25,7 +25,7 @@ def compute_cross_validations(
         if len(group) < 2:
             continue
 
-        values = [e["value_mt_co2e"] for e in group]
+        values = [e["value_t_co2e"] for e in group]
         min_val = min(values)
         max_val = max(values)
         spread_pct = round((max_val - min_val) / min_val * 100, 2) if min_val > 0 else 0.0
@@ -35,7 +35,7 @@ def compute_cross_validations(
             source_id = e.get("source_id")
             entries.append({
                 "source_type": source_types.get(source_id, "unknown"),
-                "value_mt_co2e": e["value_mt_co2e"],
+                "value_t_co2e": e["value_t_co2e"],
                 "filing_id": source_id,
             })
 

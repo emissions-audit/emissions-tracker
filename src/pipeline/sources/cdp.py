@@ -3,9 +3,9 @@ import httpx
 from src.pipeline.sources.base import BaseSource, RawEmission, RawPledge
 
 CDP_SCOPE_FIELDS = {
-    "scope_1_mt_co2e": "Scope 1",
-    "scope_2_mt_co2e": "Scope 2",
-    "scope_3_mt_co2e": "Scope 3",
+    "scope_1_t_co2e": "Scope 1",
+    "scope_2_t_co2e": "Scope 2",
+    "scope_3_t_co2e": "Scope 3",
 }
 
 

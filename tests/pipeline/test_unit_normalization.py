@@ -107,10 +107,9 @@ def test_unit_multipliers_only_canonical():
 # Phase 4 Task 4.2 Step 2: cross-source magnitude consistency tests
 #
 # These exercise the full adapter -> normalize -> _upsert_emissions chain.
-# They are SKIPPED until Phase 5 lands because `cli._upsert_emissions` still
-# writes the renamed field as `value_mt_co2e=` (line ~123 in cli.py), which
-# raises at runtime against the post-Phase-1 model. Removing the skip marker
-# after Phase 5 should be the only change required to re-enable.
+# Re-enabled in Phase 5 once `cli._upsert_emissions`, the seed JSONs, and the
+# CDP/CARB SCOPE_FIELDS dicts all use the canonical `value_t_co2e` /
+# `scope_N_t_co2e` names.
 # ---------------------------------------------------------------------------
 
 import asyncio
@@ -119,7 +118,6 @@ from src.pipeline.cli import _upsert_emissions
 from src.pipeline.sources.cdp import CdpSource
 
 
-@pytest.mark.skip(reason="depends on Phase 5: cli._upsert_emissions still writes value_mt_co2e — re-enable after Phase 5 lands")
 def test_cdp_xom_2023_seeds_at_tonne_magnitude(db_session):
     """XOM 2023 from CDP seed should land in DB at ~112M tonnes (real-world correct)."""
     sync_session = db_session._session
@@ -152,7 +150,6 @@ def test_cdp_xom_2023_seeds_at_tonne_magnitude(db_session):
     )
 
 
-@pytest.mark.skip(reason="depends on Phase 5: cli._upsert_emissions still writes value_mt_co2e — re-enable after Phase 5 lands")
 def test_carb_xom_2026_seeds_at_tonne_magnitude(db_session):
     """XOM 2026 from CARB SB253 seed should also land at ~112M tonnes."""
     from src.pipeline.sources.carb import CarbSource
