@@ -18,6 +18,7 @@ from src.pipeline.sources.carb import CarbSource
 from src.pipeline.sources.epa_ghgrp import EpaGhgrpSource
 from src.pipeline.sources.eu_ets import EuEtsSource
 from src.pipeline.validate import compute_cross_validations
+from src.pipeline.validators.sanity import check_sanity, SanityCheckFailed
 from src.pipeline.export import export_all
 from src.pipeline.coverage import create_snapshot, format_report, format_brief
 
@@ -158,6 +159,14 @@ def ingest(
     session = _get_sync_session()
     count = _upsert_emissions(session, raw_emissions)
     typer.echo(f"Upserted {count} emissions records")
+
+    # Post-ingest sanity check — halt if any value > 10 Gt
+    try:
+        check_sanity(session)
+    except SanityCheckFailed as e:
+        typer.echo(f"❌ SANITY CHECK FAILED: {e}", err=True)
+        session.close()
+        raise typer.Exit(2)
 
     # Post-ingest coverage snapshot
     snapshot = create_snapshot(session, trigger="post_ingest", source_filter=source)
