@@ -24,7 +24,7 @@ def test_parse_cdp_response():
 
     scope1 = [r for r in results if r.scope == "Scope 1"][0]
     assert scope1.value == 68_000_000
-    assert scope1.unit == "mt_co2e"
+    assert scope1.unit == "t_co2e"
     assert scope1.verified is True
     assert scope1.filing_type == "cdp_response"
 

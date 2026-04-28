@@ -53,7 +53,7 @@ def test_parse_carb_response_basic():
     assert len(cvx) == 2
     cvx_s1 = [r for r in cvx if r.scope == "Scope 1"][0]
     assert cvx_s1.value == 55_000_000
-    assert cvx_s1.unit == "mt_co2e"
+    assert cvx_s1.unit == "t_co2e"
     assert cvx_s1.methodology == "ghg_protocol"
     assert cvx_s1.verified is True
     assert cvx_s1.filing_type == "carb_sb253"
