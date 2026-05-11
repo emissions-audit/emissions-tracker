@@ -62,7 +62,7 @@ class Emission(Base):
     company_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("companies.id"))
     year: Mapped[int] = mapped_column(Integer)
     scope: Mapped[str] = mapped_column(String(10))
-    value_mt_co2e: Mapped[float] = mapped_column(Numeric(precision=20, scale=2))
+    value_t_co2e: Mapped[float] = mapped_column(Numeric(precision=20, scale=2))
     methodology: Mapped[str | None] = mapped_column(String(50))
     verified: Mapped[bool | None] = mapped_column(Boolean)
     source_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("filings.id"))
@@ -82,7 +82,7 @@ class Pledge(Base):
     target_scope: Mapped[str | None] = mapped_column(String(50))
     target_reduction_pct: Mapped[float | None] = mapped_column(Numeric(precision=5, scale=2))
     baseline_year: Mapped[int | None] = mapped_column(Integer)
-    baseline_value_mt_co2e: Mapped[float | None] = mapped_column(Numeric(precision=20, scale=2))
+    baseline_value_t_co2e: Mapped[float | None] = mapped_column(Numeric(precision=20, scale=2))
     source_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("filings.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -130,7 +130,7 @@ class SourceEntry(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     cross_validation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cross_validations.id"))
     source_type: Mapped[str] = mapped_column(String(20))
-    value_mt_co2e: Mapped[float] = mapped_column(Numeric(precision=20, scale=2))
+    value_t_co2e: Mapped[float] = mapped_column(Numeric(precision=20, scale=2))
     filing_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("filings.id"))
 
     filing: Mapped["Filing | None"] = relationship()

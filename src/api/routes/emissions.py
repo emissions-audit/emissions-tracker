@@ -18,10 +18,10 @@ router = APIRouter(tags=["emissions"])
 
 def _annotate(e: Emission, ticker: str | None, corrections: list) -> EmissionResponse:
     base = EmissionResponse.model_validate(e)
-    base.value_mt_co2e = float(
+    base.value_t_co2e = float(
         apply_value(
-            "value_mt_co2e",
-            base.value_mt_co2e,
+            "value_t_co2e",
+            base.value_t_co2e,
             ticker,
             base.year,
             base.scope,
@@ -90,8 +90,8 @@ def build_router(get_db) -> APIRouter:
         if sector:
             stmt = stmt.join(Company).where(Company.sector == sector)
 
-        if sort == "value_mt_co2e":
-            col = Emission.value_mt_co2e
+        if sort == "value_t_co2e":
+            col = Emission.value_t_co2e
             stmt = stmt.order_by(sa_desc(col) if order == "desc" else col)
 
         count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -144,10 +144,10 @@ def build_router(get_db) -> APIRouter:
                 company_name=name,
                 year=e.year,
                 scope=e.scope,
-                value_mt_co2e=float(
+                value_t_co2e=float(
                     apply_value(
-                        "value_mt_co2e",
-                        e.value_mt_co2e,
+                        "value_t_co2e",
+                        e.value_t_co2e,
                         ticker,
                         e.year,
                         e.scope,

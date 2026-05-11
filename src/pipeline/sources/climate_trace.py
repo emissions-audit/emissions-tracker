@@ -1,3 +1,16 @@
+"""Climate TRACE asset-rollup data source.
+
+API returns asset-level emissions in tonnes CO2e (t_co2e).
+The aggregator sums owned assets per ticker via client-side filter on
+Owners[].CompanyName (the v6 API's owners query-param does not reliably
+filter — see _asset_owned_by below).
+
+Known limitation: ASSET_LIMIT=500 may truncate global asset lists for
+oil-and-gas majors with many holdings; owner filter may also miss
+subsidiaries. Cross-source magnitude alignment with CDP is the success
+criterion for ET-83; tightening accuracy is ET-84's scope.
+"""
+
 import httpx
 
 from src.pipeline.sources.base import BaseSource, RawEmission

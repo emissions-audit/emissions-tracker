@@ -9,7 +9,7 @@ def test_emission_response_has_no_provenance_without_correction(client):
     items = resp.json()["items"]
     assert len(items) == 1
     assert items[0].get("provenance") is None
-    assert items[0]["value_mt_co2e"] == 68_000_000
+    assert items[0]["value_t_co2e"] == 68_000_000
 
 
 def test_correction_overrides_value_and_adds_provenance(client):
@@ -18,7 +18,7 @@ def test_correction_overrides_value_and_adds_provenance(client):
             "company_ticker": "SHEL",
             "year": 2023,
             "scope": "1",
-            "field": "value_mt_co2e",
+            "field": "value_t_co2e",
             "old_value": 68_000_000,
             "new_value": 70_500_000,
             "source_url": "https://example.org/shell-2023-restatement",
@@ -34,13 +34,13 @@ def test_correction_overrides_value_and_adds_provenance(client):
         items = resp.json()["items"]
         assert len(items) == 1
         row = items[0]
-        assert row["value_mt_co2e"] == 70_500_000
+        assert row["value_t_co2e"] == 70_500_000
         prov = row.get("provenance")
         assert prov is not None
         assert prov["contributors"] == ["@alice"]
         assert len(prov["corrections"]) == 1
         c = prov["corrections"][0]
-        assert c["field"] == "value_mt_co2e"
+        assert c["field"] == "value_t_co2e"
         assert c["old_value"] == 68_000_000
         assert c["new_value"] == 70_500_000
         assert c["contributor"] == "@alice"
@@ -55,7 +55,7 @@ def test_correction_flows_through_list_and_compare_routes(client):
             "company_ticker": "XOM",
             "year": 2023,
             "scope": "1",
-            "field": "value_mt_co2e",
+            "field": "value_t_co2e",
             "old_value": 112_000_000,
             "new_value": 120_000_000,
             "source_url": "https://example.org/xom-2023-restatement",
@@ -64,10 +64,10 @@ def test_correction_flows_through_list_and_compare_routes(client):
         }
     ]
     try:
-        list_resp = client.get("/v1/emissions?year=2023&scope=1&sort=value_mt_co2e&order=desc")
+        list_resp = client.get("/v1/emissions?year=2023&scope=1&sort=value_t_co2e&order=desc")
         assert list_resp.status_code == 200
         items = list_resp.json()["items"]
-        xom_rows = [i for i in items if i["value_mt_co2e"] == 120_000_000]
+        xom_rows = [i for i in items if i["value_t_co2e"] == 120_000_000]
         assert len(xom_rows) == 1
         assert xom_rows[0]["provenance"]["contributors"] == ["@bob"]
 
@@ -80,7 +80,7 @@ def test_correction_flows_through_list_and_compare_routes(client):
         cmp_rows = cmp_resp.json()
         xom_cmp = [r for r in cmp_rows if r["company_name"] == "ExxonMobil"]
         assert len(xom_cmp) == 1
-        assert xom_cmp[0]["value_mt_co2e"] == 120_000_000
+        assert xom_cmp[0]["value_t_co2e"] == 120_000_000
     finally:
         corrections_module.clear_cache()
 
@@ -92,6 +92,6 @@ def test_build_provenance_returns_none_without_match():
 
 def test_apply_value_returns_original_without_match():
     result = corrections_module.apply_value(
-        "value_mt_co2e", 100.0, "NOPE", 2023, "1", corrections=[]
+        "value_t_co2e", 100.0, "NOPE", 2023, "1", corrections=[]
     )
     assert result == 100.0

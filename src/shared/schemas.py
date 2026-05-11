@@ -37,7 +37,7 @@ class EmissionResponse(BaseModel):
     company_id: uuid.UUID
     year: int
     scope: str
-    value_mt_co2e: float
+    value_t_co2e: float
     methodology: str | None = None
     verified: bool | None = None
     source_id: uuid.UUID | None = None
@@ -67,7 +67,7 @@ class PledgeResponse(BaseModel):
     target_scope: str | None = None
     target_reduction_pct: float | None = None
     baseline_year: int | None = None
-    baseline_value_mt_co2e: float | None = None
+    baseline_value_t_co2e: float | None = None
     source_id: uuid.UUID | None = None
 
     model_config = {"from_attributes": True}
@@ -75,7 +75,7 @@ class PledgeResponse(BaseModel):
 
 class SourceEntryResponse(BaseModel):
     source_type: str
-    value_mt_co2e: float
+    value_t_co2e: float
     filing_id: uuid.UUID | None = None
     filing_url: str | None = None
 
@@ -99,7 +99,7 @@ class CrossValidationResponse(BaseModel):
 
 class DiscrepancySourceDetail(BaseModel):
     source_type: str
-    value_mt_co2e: float
+    value_t_co2e: float
     filing_url: str | None = None
 
 
@@ -125,7 +125,7 @@ class CompareRow(BaseModel):
     company_name: str
     year: int
     scope: str
-    value_mt_co2e: float
+    value_t_co2e: float
 
 
 class PledgeTrackerRow(BaseModel):

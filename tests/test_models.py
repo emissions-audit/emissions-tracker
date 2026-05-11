@@ -33,7 +33,7 @@ def test_create_filing_and_emission(db_session):
                     filing_type="10k_xbrl", source_url="https://sec.gov/example",
                     parser_used="xbrl", raw_hash="abc123")
     emission = Emission(id=uuid.uuid4(), company_id=company_id, year=2023,
-                        scope="1", value_mt_co2e=120_000_000.0,
+                        scope="1", value_t_co2e=120_000_000.0,
                         methodology="ghg_protocol", verified=True, source_id=filing_id)
 
     db_session.add_all([company, filing, emission])
@@ -41,7 +41,7 @@ def test_create_filing_and_emission(db_session):
 
     result = db_session.query(Emission).first()
     assert result.scope == "1"
-    assert result.value_mt_co2e == 120_000_000.0
+    assert result.value_t_co2e == 120_000_000.0
     assert result.verified is True
 
 
@@ -55,7 +55,7 @@ def test_create_cross_validation(db_session):
                          source_count=3, min_value=90_000_000.0, max_value=120_000_000.0,
                          spread_pct=33.3, flag="red")
     entry = SourceEntry(id=uuid.uuid4(), cross_validation_id=cv_id,
-                        source_type="regulatory", value_mt_co2e=100_000_000.0)
+                        source_type="regulatory", value_t_co2e=100_000_000.0)
 
     db_session.add_all([company, cv, entry])
     db_session._session.commit()

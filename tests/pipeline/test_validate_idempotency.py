@@ -49,12 +49,12 @@ def sync_session():
     session.add_all([
         Emission(
             id=uuid.uuid4(), company_id=company.id, year=2023, scope="scope_1",
-            value_mt_co2e=68_000_000, methodology="eu_ets_verified",
+            value_t_co2e=68_000_000, methodology="eu_ets_verified",
             verified=True, source_id=filing_1.id,
         ),
         Emission(
             id=uuid.uuid4(), company_id=company.id, year=2023, scope="scope_1",
-            value_mt_co2e=72_000_000, methodology="satellite",
+            value_t_co2e=72_000_000, methodology="satellite",
             verified=False, source_id=filing_2.id,
         ),
     ])
@@ -69,7 +69,7 @@ def _run_validate_upsert(session):
     emissions = session.query(Emission).all()
     emission_dicts = [
         {"company_id": e.company_id, "year": e.year, "scope": e.scope,
-         "value_mt_co2e": float(e.value_mt_co2e), "source_id": e.source_id}
+         "value_t_co2e": float(e.value_t_co2e), "source_id": e.source_id}
         for e in emissions
     ]
     filings = {f.id: f.filing_type for f in session.query(Filing).all()}
@@ -117,7 +117,7 @@ def _run_validate_upsert(session):
                 id=uuid.uuid4(),
                 cross_validation_id=cv.id,
                 source_type=entry_data["source_type"],
-                value_mt_co2e=entry_data["value_mt_co2e"],
+                value_t_co2e=entry_data["value_t_co2e"],
                 filing_id=entry_data.get("filing_id"),
             )
             session.add(entry)
@@ -148,7 +148,7 @@ def test_validate_updates_values_on_rerun(sync_session):
     emission = sync_session.query(Emission).filter(
         Emission.methodology == "satellite"
     ).first()
-    emission.value_mt_co2e = 80_000_000
+    emission.value_t_co2e = 80_000_000
     sync_session.commit()
 
     _run_validate_upsert(sync_session)

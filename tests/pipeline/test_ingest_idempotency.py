@@ -41,7 +41,7 @@ def _sample_records() -> list[RawEmission]:
             year=2023,
             scope="Scope 1",
             value=68_000_000,
-            unit="mt_co2e",
+            unit="t_co2e",
             methodology="eu_ets_verified",
             verified=True,
             source_url="https://example.com/eu-ets",
@@ -53,7 +53,7 @@ def _sample_records() -> list[RawEmission]:
             year=2023,
             scope="Scope 2",
             value=10_000_000,
-            unit="mt_co2e",
+            unit="t_co2e",
             methodology="eu_ets_verified",
             verified=True,
             source_url="https://example.com/eu-ets",
@@ -103,5 +103,5 @@ def test_upsert_updates_values_on_rerun(sync_session):
 
     emissions = sync_session.query(Emission).order_by(Emission.scope).all()
     assert len(emissions) == 2
-    assert float(emissions[0].value_mt_co2e) == 69_000_000
-    assert float(emissions[1].value_mt_co2e) == 11_000_000
+    assert float(emissions[0].value_t_co2e) == 69_000_000
+    assert float(emissions[1].value_t_co2e) == 11_000_000

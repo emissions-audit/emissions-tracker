@@ -32,7 +32,7 @@ EMISSION_JSON = {
     "company_id": "00000000-0000-0000-0000-000000000001",
     "year": 2023,
     "scope": "1",
-    "value_mt_co2e": 68000000.0,
+    "value_t_co2e": 68000000.0,
     "methodology": None,
     "verified": None,
     "source_id": None,
@@ -94,7 +94,7 @@ def test_list_emissions():
     with EmissionsTracker(base_url=BASE) as client:
         result = client.list_emissions(year=2023, scope="1")
     assert isinstance(result.items[0], Emission)
-    assert result.items[0].value_mt_co2e == 68000000.0
+    assert result.items[0].value_t_co2e == 68000000.0
 
 
 @respx.mock
@@ -124,8 +124,8 @@ def test_list_discrepancies():
             "min_value": 65000000,
             "max_value": 72000000,
             "sources": [
-                {"source_type": "regulatory", "value_mt_co2e": 65000000, "filing_url": None},
-                {"source_type": "satellite", "value_mt_co2e": 72000000, "filing_url": None},
+                {"source_type": "regulatory", "value_t_co2e": 65000000, "filing_url": None},
+                {"source_type": "satellite", "value_t_co2e": 72000000, "filing_url": None},
             ],
         }],
         "total": 1,

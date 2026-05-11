@@ -25,7 +25,7 @@ def test_company_response():
 def test_emission_response():
     data = EmissionResponse(
         id=uuid.uuid4(), company_id=uuid.uuid4(), year=2023, scope="1",
-        value_mt_co2e=120_000_000.0, methodology="ghg_protocol", verified=True,
+        value_t_co2e=120_000_000.0, methodology="ghg_protocol", verified=True,
         source_id=uuid.uuid4(),
     )
     assert data.scope == "1"

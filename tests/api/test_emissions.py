@@ -20,10 +20,10 @@ def test_cross_company_emissions(client):
 
 
 def test_cross_company_emissions_sorted(client):
-    resp = client.get("/v1/emissions?year=2023&scope=1&sort=value_mt_co2e&order=desc")
+    resp = client.get("/v1/emissions?year=2023&scope=1&sort=value_t_co2e&order=desc")
     assert resp.status_code == 200
     items = resp.json()["items"]
-    assert items[0]["value_mt_co2e"] >= items[1]["value_mt_co2e"]
+    assert items[0]["value_t_co2e"] >= items[1]["value_t_co2e"]
 
 
 def test_compare_emissions(client):

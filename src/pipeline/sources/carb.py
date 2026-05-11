@@ -5,9 +5,9 @@ from src.pipeline.sources.base import BaseSource, RawEmission
 CARB_API_URL = "https://ww2.arb.ca.gov/api/sb253/filings"
 
 CARB_SCOPE_FIELDS = {
-    "scope_1_mt_co2e": "Scope 1",
-    "scope_2_mt_co2e": "Scope 2",
-    "scope_3_mt_co2e": "Scope 3",
+    "scope_1_t_co2e": "Scope 1",
+    "scope_2_t_co2e": "Scope 2",
+    "scope_3_t_co2e": "Scope 3",
 }
 
 CARB_COMPANY_TO_TICKER = {
@@ -58,7 +58,7 @@ def parse_carb_response(data: list[dict], years: list[int]) -> list[RawEmission]
                     year=row["reporting_year"],
                     scope=scope_label,
                     value=value,
-                    unit="mt_co2e",
+                    unit="t_co2e",
                     methodology="ghg_protocol",
                     verified=verified,
                     source_url=source_url,

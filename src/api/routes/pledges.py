@@ -32,8 +32,8 @@ def build_router(get_db) -> APIRouter:
                 .limit(1)
             )
             latest = (await db.execute(latest_stmt)).scalars().first()
-            latest_value = float(latest.value_mt_co2e) if latest else None
-            baseline = float(pledge.baseline_value_mt_co2e) if pledge.baseline_value_mt_co2e else None
+            latest_value = float(latest.value_t_co2e) if latest else None
+            baseline = float(pledge.baseline_value_t_co2e) if pledge.baseline_value_t_co2e else None
             actual_reduction = None
             on_track = None
             if baseline and latest_value and baseline > 0:

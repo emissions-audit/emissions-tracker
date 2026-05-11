@@ -10,9 +10,9 @@ SAMPLE_CARB_DATA = [
         "entity_name": "Chevron Corporation",
         "reporting_year": 2026,
         "naics_code": "211120",
-        "scope_1_mt_co2e": 55_000_000,
-        "scope_2_mt_co2e": 8_500_000,
-        "scope_3_mt_co2e": None,
+        "scope_1_t_co2e": 55_000_000,
+        "scope_2_t_co2e": 8_500_000,
+        "scope_3_t_co2e": None,
         "verification_status": "third_party_verified",
         "verification_body": "Bureau Veritas",
         "reporting_deadline": "2026-08-01",
@@ -22,9 +22,9 @@ SAMPLE_CARB_DATA = [
         "entity_name": "ExxonMobil Corporation",
         "reporting_year": 2026,
         "naics_code": "211120",
-        "scope_1_mt_co2e": 112_000_000,
-        "scope_2_mt_co2e": 14_000_000,
-        "scope_3_mt_co2e": 540_000_000,
+        "scope_1_t_co2e": 112_000_000,
+        "scope_2_t_co2e": 14_000_000,
+        "scope_3_t_co2e": 540_000_000,
         "verification_status": "third_party_verified",
         "verification_body": "DNV",
         "reporting_deadline": "2026-08-01",
@@ -34,9 +34,9 @@ SAMPLE_CARB_DATA = [
         "entity_name": "Some Unknown Corp",
         "reporting_year": 2026,
         "naics_code": "999999",
-        "scope_1_mt_co2e": 1_000,
-        "scope_2_mt_co2e": 500,
-        "scope_3_mt_co2e": None,
+        "scope_1_t_co2e": 1_000,
+        "scope_2_t_co2e": 500,
+        "scope_3_t_co2e": None,
         "verification_status": "unverified",
         "verification_body": None,
         "reporting_deadline": "2026-08-01",
@@ -53,7 +53,7 @@ def test_parse_carb_response_basic():
     assert len(cvx) == 2
     cvx_s1 = [r for r in cvx if r.scope == "Scope 1"][0]
     assert cvx_s1.value == 55_000_000
-    assert cvx_s1.unit == "mt_co2e"
+    assert cvx_s1.unit == "t_co2e"
     assert cvx_s1.methodology == "ghg_protocol"
     assert cvx_s1.verified is True
     assert cvx_s1.filing_type == "carb_sb253"
@@ -85,9 +85,9 @@ def test_parse_carb_response_skips_null_scopes():
             "entity_name": "Chevron Corporation",
             "reporting_year": 2026,
             "naics_code": "211120",
-            "scope_1_mt_co2e": None,
-            "scope_2_mt_co2e": None,
-            "scope_3_mt_co2e": None,
+            "scope_1_t_co2e": None,
+            "scope_2_t_co2e": None,
+            "scope_3_t_co2e": None,
             "verification_status": "third_party_verified",
             "verification_body": "Bureau Veritas",
             "reporting_deadline": "2026-08-01",

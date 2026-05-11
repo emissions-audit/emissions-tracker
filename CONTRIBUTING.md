@@ -245,12 +245,12 @@ If you believe a specific emissions figure in the database is wrong, you can cha
   "company_id": "...",
   "year": 2023,
   "scope": "Scope 1",
-  "value_mt_co2e": 125000.0,
+  "value_t_co2e": 125000.0,
   "provenance": {
     "contributors": ["@alice"],
     "corrections": [
       {
-        "field": "value_mt_co2e",
+        "field": "value_t_co2e",
         "old_value": 118000.0,
         "new_value": 125000.0,
         "source_url": "https://...",

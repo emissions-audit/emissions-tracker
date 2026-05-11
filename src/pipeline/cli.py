@@ -18,6 +18,7 @@ from src.pipeline.sources.carb import CarbSource
 from src.pipeline.sources.epa_ghgrp import EpaGhgrpSource
 from src.pipeline.sources.eu_ets import EuEtsSource
 from src.pipeline.validate import compute_cross_validations
+from src.pipeline.validators.sanity import check_sanity, SanityCheckFailed
 from src.pipeline.export import export_all
 from src.pipeline.coverage import create_snapshot, format_report, format_brief
 
@@ -119,13 +120,13 @@ def _upsert_emissions(session, raw_emissions: list[RawEmission]):
                 company_id=company.id,
                 year=raw.year,
                 scope=normalized_scope,
-                value_mt_co2e=normalized_value,
+                value_t_co2e=normalized_value,
                 methodology=raw.methodology,
                 verified=raw.verified,
                 source_id=filing.id,
             ))
         else:
-            emission.value_mt_co2e = normalized_value
+            emission.value_t_co2e = normalized_value
             emission.methodology = raw.methodology
             emission.verified = raw.verified
         count += 1
@@ -158,6 +159,14 @@ def ingest(
     session = _get_sync_session()
     count = _upsert_emissions(session, raw_emissions)
     typer.echo(f"Upserted {count} emissions records")
+
+    # Post-ingest sanity check — halt if any value > 10 Gt
+    try:
+        check_sanity(session)
+    except SanityCheckFailed as e:
+        typer.echo(f"❌ SANITY CHECK FAILED: {e}", err=True)
+        session.close()
+        raise typer.Exit(2)
 
     # Post-ingest coverage snapshot
     snapshot = create_snapshot(session, trigger="post_ingest", source_filter=source)
@@ -195,7 +204,7 @@ def validate():
 
     emission_dicts = [
         {"company_id": e.company_id, "year": e.year, "scope": e.scope,
-         "value_mt_co2e": float(e.value_mt_co2e), "source_id": e.source_id}
+         "value_t_co2e": float(e.value_t_co2e), "source_id": e.source_id}
         for e in emissions
     ]
 
@@ -248,7 +257,7 @@ def validate():
                 id=uuid.uuid4(),
                 cross_validation_id=cv.id,
                 source_type=entry_data["source_type"],
-                value_mt_co2e=entry_data["value_mt_co2e"],
+                value_t_co2e=entry_data["value_t_co2e"],
                 filing_id=entry_data.get("filing_id"),
             )
             session.add(entry)
